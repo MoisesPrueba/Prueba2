@@ -11,26 +11,197 @@ import {
   Pill, 
   Clipboard,
   Stethoscope,
-  AlertTriangle,
   Heart,
   Activity,
   TestTube,
   Scissors,
   Bed,
-  User,
-  Clock,
-  MapPin,
-  Phone,
-  Mail,
-  Shield,
   Eye,
   EyeOff,
-  Plus,
-  Loader
+  AlertCircle,
+  User,
+  Phone,
+  MapPin,
+  Droplet,
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  Loader2
 } from 'lucide-react';
 
 // Tipos de datos
-interface PatientInfo {
+interface HistoriaClinica {
+  id_historia: number;
+  id_estado: number;
+  id_perfil_medico: number;
+  fecha_creacion: string;
+  estado_historia_clinica?: {
+    nombre_estado: string;
+    descripcion: string;
+  };
+  perfil_medico?: PerfilMedico;
+}
+
+interface PerfilMedico {
+  id_perfil_medico: number;
+  fecha_atencion: string;
+  grupo_sanguineo?: string;
+  ambiente_residencia?: string;
+  orientacion_sexual?: string;
+  vida_sexual_activa?: boolean;
+  perfil_alergias?: PerfilAlergia[];
+}
+
+interface PerfilAlergia {
+  id_perfil_alergias: number;
+  alergia?: {
+    nombre_alergia: string;
+    componente_alergeno: string;
+  };
+}
+
+interface ServicioMedico {
+  id_servicio_medico: number;
+  fecha_servicio: string;
+  hora_inicio_servicio: string;
+  hora_fin_servicio: string;
+  cita_medica?: {
+    id_paciente: number;
+    estado: string;
+    fecha_hora_programada: string;
+    personal_medico?: {
+      persona?: {
+        prenombres: string;
+        primer_apellido: string;
+        segundo_apellido: string;
+      };
+      especialidad?: {
+        descripcion: string;
+      };
+    };
+  };
+  consulta_medica?: ConsultaMedica[];
+  diagnostico?: Diagnostico[];
+  tratamiento?: Tratamiento[];
+  examen?: Examen[];
+  terapia?: Terapia[];
+  intervencion_quirurgica?: IntervencionQuirurgica[];
+  control?: Control[];
+  ingreso_hospitalizacion?: IngresoHospitalizacion[];
+  alta_hospitalizacion?: AltaHospitalizacion[];
+}
+
+interface ConsultaMedica {
+  id_consulta_medica: number;
+  observaciones_generales?: string;
+  motivo_consulta?: string;
+  tipo_servicio?: {
+    nombre: string;
+  };
+  subtipo_servicio?: {
+    nombre: string;
+  };
+}
+
+interface Diagnostico {
+  id_diagnostico: number;
+  detalle?: string;
+  morbilidad?: {
+    descripcion?: string;
+    fecha_identificacion?: string;
+    tipo: string;
+    nivel_gravedad?: string;
+    contagiosa?: boolean;
+    cie10?: {
+      codigo?: string;
+      descripcion?: string;
+    };
+  };
+  sintoma?: Sintoma[];
+}
+
+interface Sintoma {
+  id_sintoma: number;
+  nombre_sintoma: string;
+  fecha_primera_manifestacion: string;
+  descripcion?: string;
+  severidad: number;
+  estado_actual: string;
+}
+
+interface Tratamiento {
+  id_tratamiento: number;
+  razon?: string;
+  duracion_cantidad?: number;
+  observaciones?: string;
+  unidad_tiempo?: {
+    nombre?: string;
+  };
+  tratamiento_medicamento?: TratamientoMedicamento[];
+}
+
+interface TratamientoMedicamento {
+  id_tratamiento_medicamento: number;
+  motivo?: string;
+  cantidad_dosis: number;
+  frecuencia: string;
+  medicamento?: {
+    nombre_comercial: string;
+    metodo_administracion?: string;
+    concentracion?: string;
+    laboratorio: string;
+  };
+}
+
+interface Examen {
+  id_examen: number;
+  descripcion_procedimiento?: string;
+  fecha_hora_atencion: string;
+  descripcion?: string;
+  tipo_procedimiento?: string;
+  tipo_laboratorio?: string;
+  resultado?: string;
+}
+
+interface Terapia {
+  id_terapia: number;
+  descripcion?: string;
+  observaciones?: string;
+  resultados?: string;
+}
+
+interface IntervencionQuirurgica {
+  id_intervencion: number;
+  procedimiento_quirurgico?: string;
+  tipo_anestesia?: string;
+  observaciones?: string;
+}
+
+interface Control {
+  id_control: number;
+  pulso_cardiaco: number;
+  presion_diastolica: number;
+  presion_sistolica: number;
+  oxigenacion: number;
+  estado_paciente?: string;
+  observaciones?: string;
+}
+
+interface IngresoHospitalizacion {
+  id_ingreso_hospitalizacion: number;
+  razon_ingreso?: string;
+  atenciones_necesarias?: string;
+  fecha_estimada_alta?: string;
+  nro_camas?: number;
+}
+
+interface AltaHospitalizacion {
+  id_alta_hospitalizacion: number;
+  indicaciones_postalta?: string;
+  motivo_alta?: string;
+}
+
+interface PersonaInfo {
   id_persona: number;
   prenombres: string;
   primer_apellido: string;
@@ -44,336 +215,318 @@ interface PatientInfo {
   numero_celular_emergencia?: string;
 }
 
-interface MedicalProfile {
-  id_perfil_medico: number;
-  fecha_atencion: string;
-  grupo_sanguineo?: string;
-  ambiente_residencia?: string;
-  orientacion_sexual?: string;
-  vida_sexual_activa?: boolean;
-  alergias: Array<{
-    id_alergia: number;
-    nombre_alergia: string;
-    componente_alergeno: string;
-  }>;
-}
-
-interface MedicalHistory {
-  id_historia: number;
-  fecha_creacion: string;
-  estado: {
-    nombre_estado: string;
-    descripcion: string;
-  };
-}
-
-interface MedicalService {
-  id_servicio_medico: number;
-  fecha_servicio: string;
-  hora_inicio_servicio: string;
-  hora_fin_servicio: string;
-  cita_medica: {
-    id_personal_medico: number;
-    personal_medico: {
-      persona: {
-        prenombres: string;
-        primer_apellido: string;
-        segundo_apellido: string;
-      };
-      especialidad: {
-        descripcion: string;
-        area_asignada: string;
-      };
-    };
-  };
-  consulta_medica?: {
-    motivo_consulta: string;
-    observaciones_generales: string;
-    tipo_servicio: {
-      nombre: string;
-    };
-    subtipo_servicio: {
-      nombre: string;
-    };
-  };
-  examenes: Array<{
-    id_examen: number;
-    descripcion_procedimiento: string;
-    fecha_hora_atencion: string;
-    descripcion: string;
-    tipo_procedimiento: string;
-    tipo_laboratorio: string;
-    resultado: string;
-  }>;
-  diagnosticos: Array<{
-    id_diagnostico: number;
-    detalle: string;
-    morbilidad: {
-      descripcion: string;
-      fecha_identificacion: string;
-      tipo: string;
-      nivel_gravedad: string;
-      contagiosa: boolean;
-      cie10: {
-        codigo: string;
-        descripcion: string;
-      };
-    };
-    sintomas: Array<{
-      nombre_sintoma: string;
-      fecha_primera_manifestacion: string;
-      descripcion: string;
-      severidad: number;
-      estado_actual: string;
-    }>;
-  }>;
-  tratamientos: Array<{
-    id_tratamiento: number;
-    razon: string;
-    duracion_cantidad: number;
-    observaciones: string;
-    unidad_tiempo: {
-      nombre: string;
-    };
-    medicamentos: Array<{
-      medicamento: {
-        nombre_comercial: string;
-        metodo_administracion: string;
-        concentracion: string;
-        laboratorio: string;
-      };
-      motivo: string;
-      cantidad_dosis: number;
-      frecuencia: string;
-    }>;
-  }>;
-  terapias: Array<{
-    id_terapia: number;
-    descripcion: string;
-    observaciones: string;
-    resultados: string;
-  }>;
-  intervenciones_quirurgicas: Array<{
-    id_intervencion: number;
-    procedimiento_quirurgico: string;
-    tipo_anestesia: string;
-    observaciones: string;
-  }>;
-  controles: Array<{
-    id_control: number;
-    pulso_cardiaco: number;
-    presion_diastolica: number;
-    presion_sistolica: number;
-    oxigenacion: number;
-    estado_paciente: string;
-    observaciones: string;
-  }>;
-  ingresos_hospitalizacion: Array<{
-    id_ingreso_hospitalizacion: number;
-    razon_ingreso: string;
-    atenciones_necesarias: string;
-    fecha_estimada_alta: string;
-    nro_camas: number;
-  }>;
-  altas_hospitalizacion: Array<{
-    id_alta_hospitalizacion: number;
-    indicaciones_postalta: string;
-    motivo_alta: string;
-  }>;
-}
-
-interface MedicalRecord {
-  patientInfo: PatientInfo;
-  medicalProfile: MedicalProfile;
-  medicalHistory: MedicalHistory;
-  medicalServices: MedicalService[];
-}
-
 const MedicalRecords: React.FC = () => {
   const { user } = useUser();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRecord, setSelectedRecord] = useState<string | null>(null);
-  const [records, setRecords] = useState<Array<{id: string, patientName: string, lastUpdate: string, status: string}>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [historias, setHistorias] = useState<HistoriaClinica[]>([]);
+  const [personasInfo, setPersonasInfo] = useState<{ [key: number]: PersonaInfo }>({});
   
   if (!user) return null;
 
-  // Cargar registros médicos según el rol del usuario
-  useEffect(() => {
-    loadMedicalRecords();
-  }, [user.currentRole, user.currentProfileId]);
+  // Función para obtener información de personas
+  const obtenerPersonasInfo = async (personaIds: number[]) => {
+    try {
+      console.log('Obteniendo información de personas:', personaIds);
+      
+      const { data, error } = await supabase
+        .from('persona')
+        .select('*')
+        .in('id_persona', personaIds);
 
-  const loadMedicalRecords = async () => {
+      if (error) {
+        console.error('Error obteniendo personas:', error);
+        throw error;
+      }
+
+      console.log('Personas obtenidas:', data);
+      
+      const personasMap: { [key: number]: PersonaInfo } = {};
+      data?.forEach(persona => {
+        personasMap[persona.id_persona] = persona;
+      });
+      
+      return personasMap;
+    } catch (error) {
+      console.error('Error en obtenerPersonasInfo:', error);
+      throw error;
+    }
+  };
+
+  // Función para obtener historias clínicas según el rol
+  const obtenerHistoriasClinicas = async () => {
     try {
       setLoading(true);
       setError(null);
+      console.log('Iniciando carga de historias clínicas para usuario:', user);
 
-      let recordsData: Array<{id: string, patientName: string, lastUpdate: string, status: string}> = [];
+      let historiasData: HistoriaClinica[] = [];
+      let personaIds: number[] = [];
 
-      if (user.currentRole === 'patient') {
-        // Para pacientes, cargar sus propios registros y los de familiares
-        const profileIds = user.profiles.map(profile => profile.id);
-        
-        for (const profileId of profileIds) {
-          const { data: historiaData, error: historiaError } = await supabase
+      switch (user.currentRole) {
+        case 'patient':
+          console.log('Cargando historias para paciente');
+          // Obtener IDs de personas relacionadas (usuario + familiares)
+          personaIds = user.profiles.map(profile => parseInt(profile.id));
+          console.log('IDs de personas a consultar:', personaIds);
+          break;
+
+        case 'admin':
+          console.log('Cargando todas las historias para administrador');
+          // Los administradores pueden ver todas las historias
+          const { data: todasHistorias, error: errorAdmin } = await supabase
             .from('historia_clinica')
             .select(`
-              id_historia,
-              fecha_creacion,
-              estado_historia_clinica!inner(nombre_estado),
-              perfil_medico!inner(
-                id_perfil_medico,
-                fecha_atencion,
-                paciente!inner(
-                  persona!inner(
-                    prenombres,
-                    primer_apellido,
-                    segundo_apellido
+              *,
+              estado_historia_clinica:id_estado (
+                nombre_estado,
+                descripcion
+              ),
+              perfil_medico:id_perfil_medico (
+                *,
+                perfil_alergias (
+                  *,
+                  alergia:id_alergia (
+                    nombre_alergia,
+                    componente_alergeno
                   )
                 )
               )
             `)
-            .eq('perfil_medico.paciente.id_persona', profileId);
+            .order('fecha_creacion', { ascending: false });
 
-          if (historiaError) throw historiaError;
-
-          if (historiaData) {
-            historiaData.forEach((historia: any) => {
-              const persona = historia.perfil_medico.paciente.persona;
-              recordsData.push({
-                id: `${profileId}-${historia.id_historia}`,
-                patientName: `${persona.prenombres} ${persona.primer_apellido} ${persona.segundo_apellido}`,
-                lastUpdate: new Date(historia.perfil_medico.fecha_atencion).toLocaleDateString('es-ES'),
-                status: historia.estado_historia_clinica.nombre_estado
-              });
-            });
+          if (errorAdmin) {
+            console.error('Error obteniendo historias para admin:', errorAdmin);
+            throw errorAdmin;
           }
-        }
-      } else if (user.currentRole === 'admin') {
-        // Para administradores, cargar todos los registros
-        const { data: historiaData, error: historiaError } = await supabase
-          .from('historia_clinica')
-          .select(`
-            id_historia,
-            fecha_creacion,
-            estado_historia_clinica!inner(nombre_estado),
-            perfil_medico!inner(
-              id_perfil_medico,
-              fecha_atencion,
-              paciente!inner(
-                id_persona,
-                persona!inner(
-                  prenombres,
-                  primer_apellido,
-                  segundo_apellido
+
+          historiasData = todasHistorias || [];
+          console.log('Historias obtenidas para admin:', historiasData.length);
+          
+          // Para admin, necesitamos obtener todas las personas que tienen historias
+          const { data: pacientes, error: errorPacientes } = await supabase
+            .from('paciente')
+            .select('id_persona, id_historia')
+            .in('id_historia', historiasData.map(h => h.id_historia));
+
+          if (errorPacientes) {
+            console.error('Error obteniendo pacientes:', errorPacientes);
+            throw errorPacientes;
+          }
+
+          personaIds = pacientes?.map(p => p.id_persona) || [];
+          break;
+
+        case 'medical':
+          console.log('Cargando historias para personal médico');
+          // El personal médico puede ver historias de sus pacientes
+          // Por ahora, mostraremos todas (esto se puede refinar según las citas asignadas)
+          const { data: historiasPersonalMedico, error: errorMedico } = await supabase
+            .from('historia_clinica')
+            .select(`
+              *,
+              estado_historia_clinica:id_estado (
+                nombre_estado,
+                descripcion
+              ),
+              perfil_medico:id_perfil_medico (
+                *,
+                perfil_alergias (
+                  *,
+                  alergia:id_alergia (
+                    nombre_alergia,
+                    componente_alergeno
+                  )
                 )
               )
-            )
-          `)
-          .limit(50);
+            `)
+            .order('fecha_creacion', { ascending: false });
 
-        if (historiaError) throw historiaError;
+          if (errorMedico) {
+            console.error('Error obteniendo historias para médico:', errorMedico);
+            throw errorMedico;
+          }
 
-        if (historiaData) {
-          recordsData = historiaData.map((historia: any) => {
-            const persona = historia.perfil_medico.paciente.persona;
-            return {
-              id: `${historia.perfil_medico.paciente.id_persona}-${historia.id_historia}`,
-              patientName: `${persona.prenombres} ${persona.primer_apellido} ${persona.segundo_apellido}`,
-              lastUpdate: new Date(historia.perfil_medico.fecha_atencion).toLocaleDateString('es-ES'),
-              status: historia.estado_historia_clinica.nombre_estado
-            };
-          });
+          historiasData = historiasPersonalMedico || [];
+          
+          // Obtener personas relacionadas con estas historias
+          const { data: pacientesMedico, error: errorPacientesMedico } = await supabase
+            .from('paciente')
+            .select('id_persona, id_historia')
+            .in('id_historia', historiasData.map(h => h.id_historia));
+
+          if (errorPacientesMedico) {
+            console.error('Error obteniendo pacientes para médico:', errorPacientesMedico);
+            throw errorPacientesMedico;
+          }
+
+          personaIds = pacientesMedico?.map(p => p.id_persona) || [];
+          break;
+
+        default:
+          throw new Error('Rol de usuario no reconocido');
+      }
+
+      // Para pacientes, necesitamos obtener las historias específicas
+      if (user.currentRole === 'patient') {
+        console.log('Obteniendo historias específicas para paciente');
+        
+        // Primero obtener los pacientes relacionados con estas personas
+        const { data: pacientesRelacionados, error: errorPacientesRel } = await supabase
+          .from('paciente')
+          .select('id_historia, id_persona')
+          .in('id_persona', personaIds);
+
+        if (errorPacientesRel) {
+          console.error('Error obteniendo pacientes relacionados:', errorPacientesRel);
+          throw errorPacientesRel;
         }
-      } else if (user.currentRole === 'medical') {
-        // Para personal médico, cargar registros de sus pacientes
-        const { data: historiaData, error: historiaError } = await supabase
-          .from('historia_clinica')
-          .select(`
-            id_historia,
-            fecha_creacion,
-            estado_historia_clinica!inner(nombre_estado),
-            perfil_medico!inner(
-              id_perfil_medico,
-              fecha_atencion,
-              paciente!inner(
-                id_persona,
-                persona!inner(
-                  prenombres,
-                  primer_apellido,
-                  segundo_apellido
+
+        console.log('Pacientes relacionados:', pacientesRelacionados);
+
+        if (pacientesRelacionados && pacientesRelacionados.length > 0) {
+          const historiaIds = pacientesRelacionados.map(p => p.id_historia);
+          
+          const { data: historiasEspecificas, error: errorHistoriasEsp } = await supabase
+            .from('historia_clinica')
+            .select(`
+              *,
+              estado_historia_clinica:id_estado (
+                nombre_estado,
+                descripcion
+              ),
+              perfil_medico:id_perfil_medico (
+                *,
+                perfil_alergias (
+                  *,
+                  alergia:id_alergia (
+                    nombre_alergia,
+                    componente_alergeno
+                  )
                 )
               )
-            )
-          `)
-          .limit(50);
+            `)
+            .in('id_historia', historiaIds)
+            .order('fecha_creacion', { ascending: false });
 
-        if (historiaError) throw historiaError;
+          if (errorHistoriasEsp) {
+            console.error('Error obteniendo historias específicas:', errorHistoriasEsp);
+            throw errorHistoriasEsp;
+          }
 
-        if (historiaData) {
-          recordsData = historiaData.map((historia: any) => {
-            const persona = historia.perfil_medico.paciente.persona;
-            return {
-              id: `${historia.perfil_medico.paciente.id_persona}-${historia.id_historia}`,
-              patientName: `${persona.prenombres} ${persona.primer_apellido} ${persona.segundo_apellido}`,
-              lastUpdate: new Date(historia.perfil_medico.fecha_atencion).toLocaleDateString('es-ES'),
-              status: historia.estado_historia_clinica.nombre_estado
-            };
-          });
+          historiasData = historiasEspecificas || [];
         }
       }
 
-      setRecords(recordsData);
+      console.log('Historias obtenidas:', historiasData.length);
+
+      // Obtener información de las personas
+      if (personaIds.length > 0) {
+        const personasMap = await obtenerPersonasInfo(personaIds);
+        setPersonasInfo(personasMap);
+      }
+
+      setHistorias(historiasData);
+      
     } catch (error) {
-      console.error('Error loading medical records:', error);
-      setError('Error al cargar las historias clínicas');
+      console.error('Error completo al cargar historias clínicas:', error);
+      setError(error instanceof Error ? error.message : 'Error desconocido al cargar las historias clínicas');
     } finally {
       setLoading(false);
     }
   };
 
-  // Filtrar registros basado en el término de búsqueda
-  const filteredRecords = records.filter(record => 
-    record.patientName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  useEffect(() => {
+    if (user) {
+      obtenerHistoriasClinicas();
+    }
+  }, [user]);
 
-  // Obtener contenido basado en el rol
+  // Filtrar historias según el término de búsqueda
+  const filteredRecords = historias.filter(historia => {
+    if (!searchTerm) return true;
+    
+    // Buscar en la información de la persona asociada
+    const pacienteInfo = Object.values(personasInfo).find(persona => {
+      // Aquí necesitaríamos relacionar la historia con la persona
+      // Por simplicidad, buscaremos en todos los nombres
+      const nombreCompleto = `${persona.prenombres} ${persona.primer_apellido} ${persona.segundo_apellido}`.toLowerCase();
+      return nombreCompleto.includes(searchTerm.toLowerCase()) || 
+             persona.dni_idcarnet.includes(searchTerm);
+    });
+    
+    return !!pacienteInfo;
+  });
+
+  if (loading) {
+    return (
+      <div className="container mx-auto">
+        <div className="flex justify-center items-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <span className="ml-2 text-gray-600">Cargando historias clínicas...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto">
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="flex">
+            <AlertCircle className="h-5 w-5 text-red-400" />
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">Error al cargar las historias clínicas</h3>
+              <div className="mt-2 text-sm text-red-700">
+                <p>{error}</p>
+                <button 
+                  onClick={obtenerHistoriasClinicas}
+                  className="mt-2 text-sm underline hover:no-underline"
+                >
+                  Intentar nuevamente
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Obtener contenido según el rol
   let content: React.ReactNode = null;
   
   switch (user.currentRole) {
     case 'patient':
       content = <PatientMedicalRecords 
         records={filteredRecords} 
+        personasInfo={personasInfo}
         selectedRecord={selectedRecord} 
-        setSelectedRecord={setSelectedRecord}
-        loading={loading}
-        error={error}
+        setSelectedRecord={setSelectedRecord} 
       />;
       break;
     case 'admin':
       content = <AdminMedicalRecords 
-        records={filteredRecords}
-        loading={loading}
-        error={error}
+        records={filteredRecords} 
+        personasInfo={personasInfo}
       />;
       break;
     case 'medical':
       content = <MedicalPersonnelRecords 
         records={filteredRecords} 
+        personasInfo={personasInfo}
         selectedRecord={selectedRecord} 
-        setSelectedRecord={setSelectedRecord}
-        loading={loading}
-        error={error}
+        setSelectedRecord={setSelectedRecord} 
       />;
       break;
     default:
       content = <PatientMedicalRecords 
         records={filteredRecords} 
+        personasInfo={personasInfo}
         selectedRecord={selectedRecord} 
-        setSelectedRecord={setSelectedRecord}
-        loading={loading}
-        error={error}
+        setSelectedRecord={setSelectedRecord} 
       />;
   }
 
@@ -404,46 +557,21 @@ const MedicalRecords: React.FC = () => {
 };
 
 interface RecordProps {
-  records: any[];
+  records: HistoriaClinica[];
+  personasInfo: { [key: number]: PersonaInfo };
   selectedRecord?: string | null;
   setSelectedRecord?: (id: string | null) => void;
-  loading: boolean;
-  error: string | null;
 }
 
-const PatientMedicalRecords: React.FC<RecordProps> = ({ 
-  records, 
-  selectedRecord, 
-  setSelectedRecord,
-  loading,
-  error 
-}) => {
-  if (loading) {
-    return (
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <div className="flex items-center justify-center py-12">
-          <Loader className="h-8 w-8 animate-spin text-blue-600 mr-3" />
-          <span className="text-gray-600">Cargando historias clínicas...</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <div className="flex items-center justify-center py-12 text-red-600">
-          <AlertTriangle className="h-8 w-8 mr-3" />
-          <span>{error}</span>
-        </div>
-      </div>
-    );
-  }
-
+const PatientMedicalRecords: React.FC<RecordProps> = ({ records, personasInfo, selectedRecord, setSelectedRecord }) => {
   return (
     <div className="bg-white rounded-lg shadow-sm">
       {selectedRecord ? (
-        <MedicalRecordDetail recordId={selectedRecord} onBack={() => setSelectedRecord?.(null)} />
+        <MedicalRecordDetail 
+          recordId={selectedRecord} 
+          onBack={() => setSelectedRecord?.(null)} 
+          personasInfo={personasInfo}
+        />
       ) : (
         <div className="p-6">
           <div className="mb-4 flex justify-between items-center">
@@ -456,26 +584,37 @@ const PatientMedicalRecords: React.FC<RecordProps> = ({
           
           <div className="space-y-4">
             {records.length > 0 ? (
-              records.map((record) => (
-                <div 
-                  key={record.id}
-                  className="border border-gray-200 rounded-md p-4 hover:bg-gray-50 cursor-pointer transition-colors"
-                  onClick={() => setSelectedRecord?.(record.id)}
-                >
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <div className="flex items-center">
-                        <FileText className="h-5 w-5 text-blue-600 mr-2" />
-                        <h3 className="font-medium text-gray-800">{record.patientName}</h3>
+              records.map((record) => {
+                // Encontrar la persona asociada a esta historia
+                const persona = Object.values(personasInfo)[0]; // Simplificado por ahora
+                const nombreCompleto = persona ? 
+                  `${persona.prenombres} ${persona.primer_apellido} ${persona.segundo_apellido}` : 
+                  'Paciente';
+                
+                return (
+                  <div 
+                    key={record.id_historia}
+                    className="border border-gray-200 rounded-md p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                    onClick={() => setSelectedRecord?.(record.id_historia.toString())}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <div className="flex items-center">
+                          <FileText className="h-5 w-5 text-blue-600 mr-2" />
+                          <h3 className="font-medium text-gray-800">{nombreCompleto}</h3>
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Creada: {new Date(record.fecha_creacion).toLocaleDateString('es-ES')}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Estado: {record.estado_historia_clinica?.nombre_estado || 'Activa'}
+                        </p>
                       </div>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Última actualización: {record.lastUpdate} • Estado: {record.status}
-                      </p>
+                      <ChevronRight className="h-5 w-5 text-gray-400" />
                     </div>
-                    <ChevronRight className="h-5 w-5 text-gray-400" />
                   </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <div className="text-center py-8 text-gray-500">
                 <FileText className="h-12 w-12 mx-auto text-gray-400 mb-2" />
@@ -489,29 +628,7 @@ const PatientMedicalRecords: React.FC<RecordProps> = ({
   );
 };
 
-const AdminMedicalRecords: React.FC<RecordProps> = ({ records, loading, error }) => {
-  if (loading) {
-    return (
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <div className="flex items-center justify-center py-12">
-          <Loader className="h-8 w-8 animate-spin text-blue-600 mr-3" />
-          <span className="text-gray-600">Cargando historias clínicas...</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <div className="flex items-center justify-center py-12 text-red-600">
-          <AlertTriangle className="h-8 w-8 mr-3" />
-          <span>{error}</span>
-        </div>
-      </div>
-    );
-  }
-
+const AdminMedicalRecords: React.FC<RecordProps> = ({ records, personasInfo }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       <div className="col-span-1 md:col-span-3 bg-white rounded-lg shadow-sm p-6">
@@ -533,13 +650,13 @@ const AdminMedicalRecords: React.FC<RecordProps> = ({ records, loading, error })
             <thead className="bg-gray-50">
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Nombre del Paciente
+                  Paciente
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   DNI
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Última Actualización
+                  Fecha Creación
                 </th>
                 <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Estado
@@ -550,39 +667,44 @@ const AdminMedicalRecords: React.FC<RecordProps> = ({ records, loading, error })
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {records.map((record) => (
-                <tr key={record.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="text-sm font-medium text-gray-900">{record.patientName}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500">40582934</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500">{record.lastUpdate}</div>
-                  </td>
-                  <td className="px-3 py-4 whitespace-nowrap">
-                    <span className={`px-3 py-1 text-center inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      record.status === 'Activo' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {record.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button className="text-blue-600 hover:text-blue-800 mr-3">
-                      Editar
-                    </button>
-                    <button className="text-green-600 hover:text-green-800 mr-3">
-                      Ver
-                    </button>
-                    <button className="text-red-600 hover:text-red-800">
-                      Archivar
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {records.map((record) => {
+                const persona = Object.values(personasInfo)[0]; // Simplificado
+                const nombreCompleto = persona ? 
+                  `${persona.prenombres} ${persona.primer_apellido} ${persona.segundo_apellido}` : 
+                  'Paciente';
+                
+                return (
+                  <tr key={record.id_historia} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{nombreCompleto}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-500">{persona?.dni_idcarnet || 'N/A'}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-500">
+                        {new Date(record.fecha_creacion).toLocaleDateString('es-ES')}
+                      </div>
+                    </td>
+                    <td className="px-3 py-4 whitespace-nowrap">
+                      <span className="px-3 py-1 text-center inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                        {record.estado_historia_clinica?.nombre_estado || 'Activa'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button className="text-blue-600 hover:text-blue-800 mr-3">
+                        Editar
+                      </button>
+                      <button className="text-green-600 hover:text-green-800 mr-3">
+                        Ver
+                      </button>
+                      <button className="text-red-600 hover:text-red-800">
+                        Archivar
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -591,39 +713,16 @@ const AdminMedicalRecords: React.FC<RecordProps> = ({ records, loading, error })
   );
 };
 
-const MedicalPersonnelRecords: React.FC<RecordProps> = ({ 
-  records, 
-  selectedRecord, 
-  setSelectedRecord,
-  loading,
-  error 
-}) => {
-  if (loading) {
-    return (
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <div className="flex items-center justify-center py-12">
-          <Loader className="h-8 w-8 animate-spin text-blue-600 mr-3" />
-          <span className="text-gray-600">Cargando historias clínicas...</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <div className="flex items-center justify-center py-12 text-red-600">
-          <AlertTriangle className="h-8 w-8 mr-3" />
-          <span>{error}</span>
-        </div>
-      </div>
-    );
-  }
-
+const MedicalPersonnelRecords: React.FC<RecordProps> = ({ records, personasInfo, selectedRecord, setSelectedRecord }) => {
   return (
     <div className="bg-white rounded-lg shadow-sm">
       {selectedRecord ? (
-        <MedicalRecordDetail recordId={selectedRecord} onBack={() => setSelectedRecord?.(null)} showTreatmentOptions={true} />
+        <MedicalRecordDetail 
+          recordId={selectedRecord} 
+          onBack={() => setSelectedRecord?.(null)} 
+          showTreatmentOptions={true}
+          personasInfo={personasInfo}
+        />
       ) : (
         <div className="p-6">
           <div className="mb-4 flex justify-between items-center">
@@ -636,26 +735,34 @@ const MedicalPersonnelRecords: React.FC<RecordProps> = ({
           
           <div className="space-y-4">
             {records.length > 0 ? (
-              records.map((record) => (
-                <div 
-                  key={record.id}
-                  className="border border-gray-200 rounded-md p-4 hover:bg-gray-50 cursor-pointer transition-colors"
-                  onClick={() => setSelectedRecord?.(record.id)}
-                >
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <div className="flex items-center">
-                        <FileText className="h-5 w-5 text-blue-600 mr-2" />
-                        <h3 className="font-medium text-gray-800">{record.patientName}</h3>
+              records.map((record) => {
+                const persona = Object.values(personasInfo)[0]; // Simplificado
+                const nombreCompleto = persona ? 
+                  `${persona.prenombres} ${persona.primer_apellido} ${persona.segundo_apellido}` : 
+                  'Paciente';
+                
+                return (
+                  <div 
+                    key={record.id_historia}
+                    className="border border-gray-200 rounded-md p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                    onClick={() => setSelectedRecord?.(record.id_historia.toString())}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <div className="flex items-center">
+                          <FileText className="h-5 w-5 text-blue-600 mr-2" />
+                          <h3 className="font-medium text-gray-800">{nombreCompleto}</h3>
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">
+                          DNI: {persona?.dni_idcarnet || 'N/A'} • 
+                          Creada: {new Date(record.fecha_creacion).toLocaleDateString('es-ES')}
+                        </p>
                       </div>
-                      <p className="text-sm text-gray-600 mt-1">
-                        DNI: 40582934 • Última actualización: {record.lastUpdate} • Estado: {record.status}
-                      </p>
+                      <ChevronRight className="h-5 w-5 text-gray-400" />
                     </div>
-                    <ChevronRight className="h-5 w-5 text-gray-400" />
                   </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <div className="text-center py-8 text-gray-500">
                 <FileText className="h-12 w-12 mx-auto text-gray-400 mb-2" />
@@ -673,164 +780,329 @@ interface DetailProps {
   recordId: string;
   onBack: () => void;
   showTreatmentOptions?: boolean;
+  personasInfo: { [key: number]: PersonaInfo };
 }
 
-const MedicalRecordDetail: React.FC<DetailProps> = ({ recordId, onBack, showTreatmentOptions = false }) => {
-  const [medicalRecord, setMedicalRecord] = useState<MedicalRecord | null>(null);
+const MedicalRecordDetail: React.FC<DetailProps> = ({ recordId, onBack, showTreatmentOptions = false, personasInfo }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [historia, setHistoria] = useState<HistoriaClinica | null>(null);
+  const [serviciosMedicos, setServiciosMedicos] = useState<ServicioMedico[]>([]);
   const [showSensitiveInfo, setShowSensitiveInfo] = useState(false);
+  const [expandedServices, setExpandedServices] = useState<{ [key: number]: boolean }>({});
 
-  useEffect(() => {
-    loadMedicalRecordDetail();
-  }, [recordId]);
-
-  const loadMedicalRecordDetail = async () => {
+  // Obtener detalles de la historia clínica
+  const obtenerDetalleHistoria = async () => {
     try {
       setLoading(true);
       setError(null);
+      console.log('Obteniendo detalle de historia:', recordId);
 
-      const [personaId, historiaId] = recordId.split('-');
-
-      // 1. Cargar información del paciente
-      const { data: personaData, error: personaError } = await supabase
-        .from('persona')
-        .select('*')
-        .eq('id_persona', personaId)
-        .single();
-
-      if (personaError) throw personaError;
-
-      // 2. Cargar historia clínica
-      const { data: historiaData, error: historiaError } = await supabase
+      // Obtener la historia clínica completa
+      const { data: historiaData, error: errorHistoria } = await supabase
         .from('historia_clinica')
         .select(`
           *,
-          estado_historia_clinica(nombre_estado, descripcion)
-        `)
-        .eq('id_historia', historiaId)
-        .single();
-
-      if (historiaError) throw historiaError;
-
-      // 3. Cargar perfil médico con alergias
-      const { data: perfilData, error: perfilError } = await supabase
-        .from('perfil_medico')
-        .select(`
-          *,
-          perfil_alergias(
-            alergia(
-              id_alergia,
-              nombre_alergia,
-              componente_alergeno
+          estado_historia_clinica:id_estado (
+            nombre_estado,
+            descripcion
+          ),
+          perfil_medico:id_perfil_medico (
+            *,
+            perfil_alergias (
+              *,
+              alergia:id_alergia (
+                nombre_alergia,
+                componente_alergeno
+              )
             )
           )
         `)
-        .eq('id_perfil_medico', historiaData.id_perfil_medico)
+        .eq('id_historia', parseInt(recordId))
         .single();
 
-      if (perfilError) throw perfilError;
+      if (errorHistoria) {
+        console.error('Error obteniendo historia:', errorHistoria);
+        throw errorHistoria;
+      }
 
-      // 4. Cargar servicios médicos completos
-      const { data: serviciosData, error: serviciosError } = await supabase
-        .from('servicio_medico')
-        .select(`
-          *,
-          cita_medica(
-            id_personal_medico,
-            personal_medico(
-              persona(prenombres, primer_apellido, segundo_apellido),
-              especialidad(descripcion, area_asignada)
-            )
-          ),
-          consulta_medica(
-            motivo_consulta,
-            observaciones_generales,
-            tipo_servicio(nombre),
-            subtipo_servicio(nombre)
-          ),
-          examen(*),
-          diagnostico(
+      setHistoria(historiaData);
+      console.log('Historia obtenida:', historiaData);
+
+      // Obtener servicios médicos relacionados
+      // Primero necesitamos encontrar las citas médicas del paciente
+      const { data: pacienteData, error: errorPaciente } = await supabase
+        .from('paciente')
+        .select('id_paciente')
+        .eq('id_historia', parseInt(recordId))
+        .single();
+
+      if (errorPaciente) {
+        console.error('Error obteniendo paciente:', errorPaciente);
+        throw errorPaciente;
+      }
+
+      console.log('Paciente encontrado:', pacienteData);
+
+      // Obtener citas médicas del paciente
+      const { data: citasData, error: errorCitas } = await supabase
+        .from('cita_medica')
+        .select('id_cita_medica')
+        .eq('id_paciente', pacienteData.id_paciente);
+
+      if (errorCitas) {
+        console.error('Error obteniendo citas:', errorCitas);
+        throw errorCitas;
+      }
+
+      console.log('Citas encontradas:', citasData);
+
+      if (citasData && citasData.length > 0) {
+        const citaIds = citasData.map(cita => cita.id_cita_medica);
+
+        // Obtener servicios médicos con toda la información relacionada
+        const { data: serviciosData, error: errorServicios } = await supabase
+          .from('servicio_medico')
+          .select(`
             *,
-            morbilidad(
-              *,
-              cie10(codigo, descripcion)
-            ),
-            sintoma(*)
-          ),
-          tratamiento(
-            *,
-            unidad_tiempo(nombre),
-            tratamiento_medicamento(
-              *,
-              medicamento(*)
+            cita_medica:id_cita_medica (
+              id_paciente,
+              estado,
+              fecha_hora_programada,
+              personal_medico:id_personal_medico (
+                persona:id_persona (
+                  prenombres,
+                  primer_apellido,
+                  segundo_apellido
+                ),
+                especialidad:id_especialidad (
+                  descripcion
+                )
+              )
             )
-          ),
-          terapia(*),
-          intervencion_quirurgica(*),
-          control(*),
-          ingreso_hospitalizacion(*),
-          alta_hospitalizacion(*)
-        `)
-        .eq('cita_medica.paciente.id_persona', personaId)
-        .order('fecha_servicio', { ascending: false });
+          `)
+          .in('id_cita_medica', citaIds)
+          .order('fecha_servicio', { ascending: false });
 
-      if (serviciosError) throw serviciosError;
+        if (errorServicios) {
+          console.error('Error obteniendo servicios:', errorServicios);
+          throw errorServicios;
+        }
 
-      // Construir el objeto de registro médico
-      const record: MedicalRecord = {
-        patientInfo: personaData,
-        medicalProfile: {
-          ...perfilData,
-          alergias: perfilData.perfil_alergias?.map((pa: any) => pa.alergia) || []
-        },
-        medicalHistory: {
-          ...historiaData,
-          estado: historiaData.estado_historia_clinica
-        },
-        medicalServices: serviciosData || []
-      };
+        console.log('Servicios médicos obtenidos:', serviciosData);
 
-      setMedicalRecord(record);
+        // Para cada servicio médico, obtener la información detallada
+        const serviciosCompletos = await Promise.all(
+          (serviciosData || []).map(async (servicio) => {
+            const servicioCompleto = { ...servicio };
+
+            try {
+              // Obtener consultas médicas
+              const { data: consultasData } = await supabase
+                .from('consulta_medica')
+                .select(`
+                  *,
+                  tipo_servicio:id_tipo_servicio (nombre),
+                  subtipo_servicio:id_subtipo_servicio (nombre)
+                `)
+                .eq('id_servicio_medico', servicio.id_servicio_medico);
+
+              servicioCompleto.consulta_medica = consultasData || [];
+
+              // Obtener diagnósticos
+              const { data: diagnosticosData } = await supabase
+                .from('diagnostico')
+                .select(`
+                  *,
+                  morbilidad:id_morbilidad (
+                    descripcion,
+                    fecha_identificacion,
+                    tipo,
+                    nivel_gravedad,
+                    contagiosa,
+                    cie10:id_cie10 (
+                      codigo,
+                      descripcion
+                    )
+                  )
+                `)
+                .eq('id_servicio_medico', servicio.id_servicio_medico);
+
+              servicioCompleto.diagnostico = diagnosticosData || [];
+
+              // Para cada diagnóstico, obtener síntomas
+              if (diagnosticosData && diagnosticosData.length > 0) {
+                for (const diagnostico of diagnosticosData) {
+                  const { data: sintomasData } = await supabase
+                    .from('sintoma')
+                    .select('*')
+                    .eq('id_diagnostico', diagnostico.id_diagnostico);
+
+                  diagnostico.sintoma = sintomasData || [];
+                }
+              }
+
+              // Obtener tratamientos
+              const { data: tratamientosData } = await supabase
+                .from('tratamiento')
+                .select(`
+                  *,
+                  unidad_tiempo:id_unid_tiempo (nombre)
+                `)
+                .eq('id_servicio_medico', servicio.id_servicio_medico);
+
+              servicioCompleto.tratamiento = tratamientosData || [];
+
+              // Para cada tratamiento, obtener medicamentos
+              if (tratamientosData && tratamientosData.length > 0) {
+                for (const tratamiento of tratamientosData) {
+                  const { data: medicamentosData } = await supabase
+                    .from('tratamiento_medicamento')
+                    .select(`
+                      *,
+                      medicamento:id_medicamento (
+                        nombre_comercial,
+                        metodo_administracion,
+                        concentracion,
+                        laboratorio
+                      )
+                    `)
+                    .eq('id_tratamiento', tratamiento.id_tratamiento);
+
+                  tratamiento.tratamiento_medicamento = medicamentosData || [];
+                }
+              }
+
+              // Obtener exámenes
+              const { data: examenesData } = await supabase
+                .from('examen')
+                .select('*')
+                .eq('id_servicio_medico', servicio.id_servicio_medico);
+
+              servicioCompleto.examen = examenesData || [];
+
+              // Obtener terapias
+              const { data: terapiasData } = await supabase
+                .from('terapia')
+                .select('*')
+                .eq('id_servicio_medico', servicio.id_servicio_medico);
+
+              servicioCompleto.terapia = terapiasData || [];
+
+              // Obtener intervenciones quirúrgicas
+              const { data: intervencionesData } = await supabase
+                .from('intervencion_quirurgica')
+                .select('*')
+                .eq('id_servicio_medico', servicio.id_servicio_medico);
+
+              servicioCompleto.intervencion_quirurgica = intervencionesData || [];
+
+              // Obtener controles
+              const { data: controlesData } = await supabase
+                .from('control')
+                .select('*')
+                .eq('id_servicio_medico', servicio.id_servicio_medico);
+
+              servicioCompleto.control = controlesData || [];
+
+              // Obtener ingresos hospitalarios
+              const { data: ingresosData } = await supabase
+                .from('ingreso_hospitalizacion')
+                .select('*')
+                .eq('id_servicio_medico', servicio.id_servicio_medico);
+
+              servicioCompleto.ingreso_hospitalizacion = ingresosData || [];
+
+              // Obtener altas hospitalarias
+              const { data: altasData } = await supabase
+                .from('alta_hospitalizacion')
+                .select('*')
+                .eq('id_servicio_medico', servicio.id_servicio_medico);
+
+              servicioCompleto.alta_hospitalizacion = altasData || [];
+
+            } catch (error) {
+              console.error(`Error obteniendo detalles del servicio ${servicio.id_servicio_medico}:`, error);
+            }
+
+            return servicioCompleto;
+          })
+        );
+
+        setServiciosMedicos(serviciosCompletos);
+        console.log('Servicios médicos completos:', serviciosCompletos);
+      }
+
     } catch (error) {
-      console.error('Error loading medical record detail:', error);
-      setError('Error al cargar los detalles de la historia clínica');
+      console.error('Error obteniendo detalle de historia:', error);
+      setError(error instanceof Error ? error.message : 'Error desconocido');
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    obtenerDetalleHistoria();
+  }, [recordId]);
+
+  const toggleServiceExpansion = (serviceId: number) => {
+    setExpandedServices(prev => ({
+      ...prev,
+      [serviceId]: !prev[serviceId]
+    }));
+  };
+
   if (loading) {
     return (
       <div className="p-6">
-        <div className="flex items-center justify-center py-12">
-          <Loader className="h-8 w-8 animate-spin text-blue-600 mr-3" />
-          <span className="text-gray-600">Cargando detalles de la historia clínica...</span>
+        <div className="flex justify-center items-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <span className="ml-2 text-gray-600">Cargando detalles de la historia clínica...</span>
         </div>
       </div>
     );
   }
 
-  if (error || !medicalRecord) {
+  if (error) {
     return (
       <div className="p-6">
-        <div className="mb-6">
-          <button 
-            onClick={onBack}
-            className="flex items-center text-blue-600 hover:text-blue-800"
-          >
-            <span className="mr-1">←</span> Volver
-          </button>
-        </div>
-        <div className="flex items-center justify-center py-12 text-red-600">
-          <AlertTriangle className="h-8 w-8 mr-3" />
-          <span>{error || 'No se pudo cargar la historia clínica'}</span>
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="flex">
+            <AlertCircle className="h-5 w-5 text-red-400" />
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">Error al cargar los detalles</h3>
+              <div className="mt-2 text-sm text-red-700">
+                <p>{error}</p>
+                <button 
+                  onClick={obtenerDetalleHistoria}
+                  className="mt-2 text-sm underline hover:no-underline"
+                >
+                  Intentar nuevamente
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
-  const { patientInfo, medicalProfile, medicalHistory, medicalServices } = medicalRecord;
+  if (!historia) {
+    return (
+      <div className="p-6">
+        <div className="text-center py-8 text-gray-500">
+          <FileText className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+          <p>No se encontró la historia clínica</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Obtener información del paciente
+  const persona = Object.values(personasInfo)[0]; // Simplificado por ahora
+  const nombreCompleto = persona ? 
+    `${persona.prenombres} ${persona.primer_apellido} ${persona.segundo_apellido}` : 
+    'Paciente';
 
   return (
     <div className="p-6">
@@ -845,13 +1117,10 @@ const MedicalRecordDetail: React.FC<DetailProps> = ({ recordId, onBack, showTrea
       
       <div className="flex justify-between items-start mb-6">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-800">
-            {`${patientInfo.prenombres} ${patientInfo.primer_apellido} ${patientInfo.segundo_apellido}`}
-          </h2>
-          <p className="text-gray-600">Historia Clínica #{medicalHistory.id_historia}</p>
+          <h2 className="text-2xl font-semibold text-gray-800">{nombreCompleto}</h2>
+          <p className="text-gray-600">Historia Clínica #{historia.id_historia}</p>
           <p className="text-sm text-gray-500">
-            Estado: {medicalHistory.estado.nombre_estado} • 
-            Creada: {new Date(medicalHistory.fecha_creacion).toLocaleDateString('es-ES')}
+            Estado: {historia.estado_historia_clinica?.nombre_estado || 'Activa'}
           </p>
         </div>
         <div className="flex space-x-3">
@@ -869,483 +1138,587 @@ const MedicalRecordDetail: React.FC<DetailProps> = ({ recordId, onBack, showTrea
       </div>
       
       {/* Información del Paciente */}
-      <div className="bg-gray-50 p-4 rounded-md mb-6">
-        <div className="flex justify-between items-center mb-3">
-          <h3 className="text-lg font-medium text-gray-800">Información del Paciente</h3>
-          <button
-            onClick={() => setShowSensitiveInfo(!showSensitiveInfo)}
-            className="flex items-center text-sm text-gray-600 hover:text-gray-800"
-          >
-            {showSensitiveInfo ? <EyeOff size={16} className="mr-1" /> : <Eye size={16} className="mr-1" />}
-            {showSensitiveInfo ? 'Ocultar' : 'Mostrar'} información sensible
-          </button>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <p className="text-sm text-gray-500">DNI</p>
-            <p className="font-medium">{patientInfo.dni_idcarnet}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Fecha de Nacimiento</p>
-            <p className="font-medium">{new Date(patientInfo.fecha_nacimiento).toLocaleDateString('es-ES')}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Sexo</p>
-            <p className="font-medium">{patientInfo.sexo === 'M' ? 'Masculino' : 'Femenino'}</p>
+      {persona && (
+        <div className="bg-gray-50 p-4 rounded-md mb-6">
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-lg font-medium text-gray-800">Información del Paciente</h3>
+            <button
+              onClick={() => setShowSensitiveInfo(!showSensitiveInfo)}
+              className="flex items-center text-sm text-gray-600 hover:text-gray-800"
+            >
+              {showSensitiveInfo ? <EyeOff size={16} /> : <Eye size={16} />}
+              <span className="ml-1">
+                {showSensitiveInfo ? 'Ocultar' : 'Mostrar'} información sensible
+              </span>
+            </button>
           </div>
           
-          {showSensitiveInfo && (
-            <>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="flex items-center">
+              <User className="h-4 w-4 text-gray-400 mr-2" />
               <div>
-                <p className="text-sm text-gray-500">Dirección</p>
-                <p className="font-medium">{patientInfo.direccion_legal}</p>
+                <p className="text-sm text-gray-500">DNI</p>
+                <p className="font-medium">{persona.dni_idcarnet}</p>
               </div>
-              <div>
-                <p className="text-sm text-gray-500">Teléfono Personal</p>
-                <p className="font-medium">{patientInfo.numero_celular_personal || 'No registrado'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Teléfono de Emergencia</p>
-                <p className="font-medium">{patientInfo.numero_celular_emergencia || 'No registrado'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Correo Electrónico</p>
-                <p className="font-medium">{patientInfo.correo_electronico || 'No registrado'}</p>
-              </div>
-            </>
-          )}
-          
-          <div>
-            <p className="text-sm text-gray-500">Grupo Sanguíneo</p>
-            <p className="font-medium">{medicalProfile.grupo_sanguineo || 'No registrado'}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Ambiente de Residencia</p>
-            <p className="font-medium">{medicalProfile.ambiente_residencia || 'No registrado'}</p>
-          </div>
-          
-          <div className="md:col-span-3">
-            <p className="text-sm text-gray-500">Alergias</p>
-            <div className="flex flex-wrap gap-2 mt-1">
-              {medicalProfile.alergias.length > 0 ? (
-                medicalProfile.alergias.map((alergia) => (
-                  <span 
-                    key={alergia.id_alergia}
-                    className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full"
-                    title={`Componente: ${alergia.componente_alergeno}`}
-                  >
-                    {alergia.nombre_alergia}
-                  </span>
-                ))
-              ) : (
-                <span className="text-gray-500 text-sm">Sin alergias registradas</span>
-              )}
             </div>
+            
+            <div className="flex items-center">
+              <Calendar className="h-4 w-4 text-gray-400 mr-2" />
+              <div>
+                <p className="text-sm text-gray-500">Fecha de Nacimiento</p>
+                <p className="font-medium">
+                  {new Date(persona.fecha_nacimiento).toLocaleDateString('es-ES')}
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center">
+              <User className="h-4 w-4 text-gray-400 mr-2" />
+              <div>
+                <p className="text-sm text-gray-500">Sexo</p>
+                <p className="font-medium">{persona.sexo === 'M' ? 'Masculino' : 'Femenino'}</p>
+              </div>
+            </div>
+
+            {showSensitiveInfo && (
+              <>
+                <div className="flex items-center">
+                  <Phone className="h-4 w-4 text-gray-400 mr-2" />
+                  <div>
+                    <p className="text-sm text-gray-500">Teléfono</p>
+                    <p className="font-medium">{persona.numero_celular_personal || 'No registrado'}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center">
+                  <MapPin className="h-4 w-4 text-gray-400 mr-2" />
+                  <div>
+                    <p className="text-sm text-gray-500">Dirección</p>
+                    <p className="font-medium">{persona.direccion_legal}</p>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {historia.perfil_medico?.grupo_sanguineo && (
+              <div className="flex items-center">
+                <Droplet className="h-4 w-4 text-red-500 mr-2" />
+                <div>
+                  <p className="text-sm text-gray-500">Grupo Sanguíneo</p>
+                  <p className="font-medium">{historia.perfil_medico.grupo_sanguineo}</p>
+                </div>
+              </div>
+            )}
           </div>
+
+          {/* Alergias */}
+          {historia.perfil_medico?.perfil_alergias && historia.perfil_medico.perfil_alergias.length > 0 && (
+            <div className="mt-4">
+              <div className="flex items-center mb-2">
+                <AlertTriangle className="h-4 w-4 text-red-500 mr-2" />
+                <p className="text-sm font-medium text-gray-700">Alergias</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {historia.perfil_medico.perfil_alergias.map((perfilAlergia, index) => (
+                  <span 
+                    key={index}
+                    className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full"
+                  >
+                    {perfilAlergia.alergia?.nombre_alergia}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-      </div>
+      )}
       
-      {/* Historial Médico */}
+      {/* Historial de Servicios Médicos */}
       <div>
         <h3 className="text-lg font-medium text-gray-800 mb-3">Historial de Servicios Médicos</h3>
         
-        <div className="space-y-6">
-          {medicalServices.length > 0 ? (
-            medicalServices.map((service) => (
-              <MedicalServiceCard key={service.id_servicio_medico} service={service} />
-            ))
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              <Stethoscope className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-              <p>No hay servicios médicos registrados</p>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-interface MedicalServiceCardProps {
-  service: MedicalService;
-}
-
-const MedicalServiceCard: React.FC<MedicalServiceCardProps> = ({ service }) => {
-  const [expanded, setExpanded] = useState(false);
-
-  const formatTime = (time: string) => {
-    return new Date(`1970-01-01T${time}`).toLocaleTimeString('es-ES', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const doctor = service.cita_medica?.personal_medico;
-  const doctorName = doctor ? 
-    `${doctor.persona.prenombres} ${doctor.persona.primer_apellido} ${doctor.persona.segundo_apellido}` : 
-    'No especificado';
-  const specialty = doctor?.especialidad?.descripcion || 'No especificado';
-
-  return (
-    <div className="border border-gray-200 rounded-md">
-      <div 
-        className="p-4 cursor-pointer hover:bg-gray-50"
-        onClick={() => setExpanded(!expanded)}
-      >
-        <div className="flex justify-between items-start">
-          <div className="flex-1">
-            <div className="flex items-center mb-2">
-              <Stethoscope className="h-5 w-5 text-blue-600 mr-2" />
-              <h4 className="font-medium text-gray-800">
-                {service.consulta_medica?.tipo_servicio?.nombre || 'Servicio Médico'}
-              </h4>
-              {service.consulta_medica?.subtipo_servicio && (
-                <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                  {service.consulta_medica.subtipo_servicio.nombre}
-                </span>
-              )}
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-gray-600">
-              <div className="flex items-center">
-                <Calendar className="h-4 w-4 mr-1" />
-                {new Date(service.fecha_servicio).toLocaleDateString('es-ES')}
-              </div>
-              <div className="flex items-center">
-                <Clock className="h-4 w-4 mr-1" />
-                {formatTime(service.hora_inicio_servicio)} - {formatTime(service.hora_fin_servicio)}
-              </div>
-              <div className="flex items-center">
-                <User className="h-4 w-4 mr-1" />
-                {doctorName}
-              </div>
-            </div>
-            
-            {service.consulta_medica?.motivo_consulta && (
-              <p className="text-sm text-gray-700 mt-2">
-                <strong>Motivo:</strong> {service.consulta_medica.motivo_consulta}
-              </p>
-            )}
-          </div>
-          
-          <ChevronRight 
-            className={`h-5 w-5 text-gray-400 transition-transform ${expanded ? 'rotate-90' : ''}`} 
-          />
-        </div>
-      </div>
-      
-      {expanded && (
-        <div className="border-t border-gray-200 p-4 bg-gray-50">
+        {serviciosMedicos.length > 0 ? (
           <div className="space-y-4">
-            {/* Especialidad del médico */}
-            {specialty !== 'No especificado' && (
-              <div>
-                <p className="text-sm font-medium text-gray-700">Especialidad:</p>
-                <p className="text-sm text-gray-600">{specialty}</p>
-              </div>
-            )}
-
-            {/* Observaciones generales */}
-            {service.consulta_medica?.observaciones_generales && (
-              <div>
-                <p className="text-sm font-medium text-gray-700">Observaciones:</p>
-                <p className="text-sm text-gray-600">{service.consulta_medica.observaciones_generales}</p>
-              </div>
-            )}
-
-            {/* Diagnósticos */}
-            {service.diagnosticos && service.diagnosticos.length > 0 && (
-              <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">Diagnósticos:</p>
-                <div className="space-y-2">
-                  {service.diagnosticos.map((diagnostico) => (
-                    <div key={diagnostico.id_diagnostico} className="bg-white p-3 rounded border">
-                      <div className="flex items-start">
-                        <Clipboard className="h-4 w-4 text-green-600 mr-2 mt-1" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">
-                            {diagnostico.morbilidad.descripcion}
-                            {diagnostico.morbilidad.cie10 && (
-                              <span className="ml-2 text-xs text-gray-500">
-                                ({diagnostico.morbilidad.cie10.codigo})
-                              </span>
-                            )}
-                          </p>
-                          {diagnostico.detalle && (
-                            <p className="text-xs text-gray-600 mt-1">{diagnostico.detalle}</p>
-                          )}
-                          <div className="flex items-center mt-1 text-xs text-gray-500">
-                            <span>Tipo: {diagnostico.morbilidad.tipo}</span>
-                            {diagnostico.morbilidad.nivel_gravedad && (
-                              <span className="ml-2">Gravedad: {diagnostico.morbilidad.nivel_gravedad}</span>
-                            )}
-                            {diagnostico.morbilidad.contagiosa && (
-                              <span className="ml-2 px-1 bg-yellow-100 text-yellow-800 rounded">Contagiosa</span>
-                            )}
-                          </div>
-                          
-                          {/* Síntomas */}
-                          {diagnostico.sintomas && diagnostico.sintomas.length > 0 && (
-                            <div className="mt-2">
-                              <p className="text-xs font-medium text-gray-700">Síntomas:</p>
-                              <div className="flex flex-wrap gap-1 mt-1">
-                                {diagnostico.sintomas.map((sintoma, index) => (
-                                  <span 
-                                    key={index}
-                                    className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded"
-                                    title={`Severidad: ${sintoma.severidad}/10 - Estado: ${sintoma.estado_actual}`}
-                                  >
-                                    {sintoma.nombre_sintoma}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
+            {serviciosMedicos.map((servicio) => (
+              <div key={servicio.id_servicio_medico} className="border border-gray-200 rounded-md">
+                <div 
+                  className="p-4 cursor-pointer hover:bg-gray-50"
+                  onClick={() => toggleServiceExpansion(servicio.id_servicio_medico)}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center mb-2">
+                        <Stethoscope className="h-5 w-5 text-blue-600 mr-2" />
+                        <h4 className="font-medium text-gray-800">
+                          Servicio Médico - {new Date(servicio.fecha_servicio).toLocaleDateString('es-ES')}
+                        </h4>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                        <div>
+                          <span className="font-medium">Hora:</span> {servicio.hora_inicio_servicio} - {servicio.hora_fin_servicio}
                         </div>
+                        {servicio.cita_medica?.personal_medico?.persona && (
+                          <div>
+                            <span className="font-medium">Médico:</span> {' '}
+                            {servicio.cita_medica.personal_medico.persona.prenombres} {' '}
+                            {servicio.cita_medica.personal_medico.persona.primer_apellido}
+                          </div>
+                        )}
+                        {servicio.cita_medica?.personal_medico?.especialidad && (
+                          <div>
+                            <span className="font-medium">Especialidad:</span> {' '}
+                            {servicio.cita_medica.personal_medico.especialidad.descripcion}
+                          </div>
+                        )}
                       </div>
                     </div>
-                  ))}
+                    
+                    <div className="ml-4">
+                      {expandedServices[servicio.id_servicio_medico] ? 
+                        <ChevronUp className="h-5 w-5 text-gray-400" /> : 
+                        <ChevronDown className="h-5 w-5 text-gray-400" />
+                      }
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
 
-            {/* Tratamientos */}
-            {service.tratamientos && service.tratamientos.length > 0 && (
-              <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">Tratamientos:</p>
-                <div className="space-y-2">
-                  {service.tratamientos.map((tratamiento) => (
-                    <div key={tratamiento.id_tratamiento} className="bg-white p-3 rounded border">
-                      <div className="flex items-start">
-                        <Pill className="h-4 w-4 text-purple-600 mr-2 mt-1" />
-                        <div className="flex-1">
-                          {tratamiento.razon && (
-                            <p className="text-sm font-medium">{tratamiento.razon}</p>
-                          )}
-                          {tratamiento.duracion_cantidad && tratamiento.unidad_tiempo && (
-                            <p className="text-xs text-gray-600">
-                              Duración: {tratamiento.duracion_cantidad} {tratamiento.unidad_tiempo.nombre}
-                            </p>
-                          )}
-                          {tratamiento.observaciones && (
-                            <p className="text-xs text-gray-600 mt-1">{tratamiento.observaciones}</p>
-                          )}
-                          
-                          {/* Medicamentos */}
-                          {tratamiento.medicamentos && tratamiento.medicamentos.length > 0 && (
-                            <div className="mt-2">
-                              <p className="text-xs font-medium text-gray-700">Medicamentos:</p>
-                              <div className="space-y-1 mt-1">
-                                {tratamiento.medicamentos.map((med, index) => (
-                                  <div key={index} className="bg-purple-50 p-2 rounded text-xs">
-                                    <p className="font-medium">{med.medicamento.nombre_comercial}</p>
-                                    <p className="text-gray-600">
-                                      {med.medicamento.concentracion} - {med.medicamento.laboratorio}
-                                    </p>
-                                    <p className="text-gray-600">
-                                      Dosis: {med.cantidad_dosis} - {med.frecuencia}
-                                    </p>
-                                    {med.medicamento.metodo_administracion && (
-                                      <p className="text-gray-600">Vía: {med.medicamento.metodo_administracion}</p>
-                                    )}
-                                    {med.motivo && (
-                                      <p className="text-gray-600">Motivo: {med.motivo}</p>
+                {expandedServices[servicio.id_servicio_medico] && (
+                  <div className="border-t border-gray-200 p-4 bg-gray-50">
+                    <div className="space-y-6">
+                      
+                      {/* Consultas Médicas */}
+                      {servicio.consulta_medica && servicio.consulta_medica.length > 0 && (
+                        <div>
+                          <h5 className="font-medium text-gray-800 mb-2 flex items-center">
+                            <Clipboard className="h-4 w-4 mr-2 text-green-600" />
+                            Consulta Médica
+                          </h5>
+                          {servicio.consulta_medica.map((consulta, index) => (
+                            <div key={index} className="bg-white p-3 rounded border">
+                              {consulta.motivo_consulta && (
+                                <div className="mb-2">
+                                  <span className="text-sm font-medium">Motivo:</span>
+                                  <p className="text-sm">{consulta.motivo_consulta}</p>
+                                </div>
+                              )}
+                              {consulta.observaciones_generales && (
+                                <div className="mb-2">
+                                  <span className="text-sm font-medium">Observaciones:</span>
+                                  <p className="text-sm">{consulta.observaciones_generales}</p>
+                                </div>
+                              )}
+                              {consulta.tipo_servicio && (
+                                <div className="text-xs text-gray-500">
+                                  Tipo: {consulta.tipo_servicio.nombre}
+                                  {consulta.subtipo_servicio && ` - ${consulta.subtipo_servicio.nombre}`}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Diagnósticos */}
+                      {servicio.diagnostico && servicio.diagnostico.length > 0 && (
+                        <div>
+                          <h5 className="font-medium text-gray-800 mb-2 flex items-center">
+                            <FileText className="h-4 w-4 mr-2 text-blue-600" />
+                            Diagnósticos
+                          </h5>
+                          {servicio.diagnostico.map((diagnostico, index) => (
+                            <div key={index} className="bg-white p-3 rounded border">
+                              {diagnostico.morbilidad && (
+                                <div className="mb-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium">
+                                      {diagnostico.morbilidad.descripcion}
+                                    </span>
+                                    {diagnostico.morbilidad.cie10?.codigo && (
+                                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                        CIE-10: {diagnostico.morbilidad.cie10.codigo}
+                                      </span>
                                     )}
                                   </div>
-                                ))}
+                                  {diagnostico.morbilidad.cie10?.descripcion && (
+                                    <p className="text-sm text-gray-600 mt-1">
+                                      {diagnostico.morbilidad.cie10.descripcion}
+                                    </p>
+                                  )}
+                                  <div className="flex gap-4 mt-2 text-xs text-gray-500">
+                                    <span>Tipo: {diagnostico.morbilidad.tipo}</span>
+                                    {diagnostico.morbilidad.nivel_gravedad && (
+                                      <span>Gravedad: {diagnostico.morbilidad.nivel_gravedad}</span>
+                                    )}
+                                    {diagnostico.morbilidad.contagiosa !== null && (
+                                      <span>
+                                        {diagnostico.morbilidad.contagiosa ? 'Contagiosa' : 'No contagiosa'}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {diagnostico.detalle && (
+                                <div className="mb-2">
+                                  <span className="text-sm font-medium">Detalle:</span>
+                                  <p className="text-sm">{diagnostico.detalle}</p>
+                                </div>
+                              )}
+
+                              {/* Síntomas */}
+                              {diagnostico.sintoma && diagnostico.sintoma.length > 0 && (
+                                <div className="mt-2">
+                                  <span className="text-sm font-medium">Síntomas:</span>
+                                  <div className="mt-1 space-y-1">
+                                    {diagnostico.sintoma.map((sintoma, sIndex) => (
+                                      <div key={sIndex} className="text-sm bg-gray-50 p-2 rounded">
+                                        <div className="flex justify-between items-start">
+                                          <span className="font-medium">{sintoma.nombre_sintoma}</span>
+                                          <span className={`text-xs px-2 py-1 rounded ${
+                                            sintoma.severidad >= 8 ? 'bg-red-100 text-red-800' :
+                                            sintoma.severidad >= 5 ? 'bg-yellow-100 text-yellow-800' :
+                                            'bg-green-100 text-green-800'
+                                          }`}>
+                                            Severidad: {sintoma.severidad}/10
+                                          </span>
+                                        </div>
+                                        {sintoma.descripcion && (
+                                          <p className="text-xs text-gray-600 mt-1">{sintoma.descripcion}</p>
+                                        )}
+                                        <div className="flex gap-4 mt-1 text-xs text-gray-500">
+                                          <span>
+                                            Primera manifestación: {new Date(sintoma.fecha_primera_manifestacion).toLocaleDateString('es-ES')}
+                                          </span>
+                                          <span>Estado: {sintoma.estado_actual}</span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Tratamientos */}
+                      {servicio.tratamiento && servicio.tratamiento.length > 0 && (
+                        <div>
+                          <h5 className="font-medium text-gray-800 mb-2 flex items-center">
+                            <Pill className="h-4 w-4 mr-2 text-purple-600" />
+                            Tratamientos
+                          </h5>
+                          {servicio.tratamiento.map((tratamiento, index) => (
+                            <div key={index} className="bg-white p-3 rounded border">
+                              {tratamiento.razon && (
+                                <div className="mb-2">
+                                  <span className="text-sm font-medium">Razón:</span>
+                                  <p className="text-sm">{tratamiento.razon}</p>
+                                </div>
+                              )}
+                              
+                              {tratamiento.duracion_cantidad && tratamiento.unidad_tiempo && (
+                                <div className="mb-2 text-sm">
+                                  <span className="font-medium">Duración:</span> {' '}
+                                  {tratamiento.duracion_cantidad} {tratamiento.unidad_tiempo.nombre}
+                                </div>
+                              )}
+
+                              {tratamiento.observaciones && (
+                                <div className="mb-2">
+                                  <span className="text-sm font-medium">Observaciones:</span>
+                                  <p className="text-sm">{tratamiento.observaciones}</p>
+                                </div>
+                              )}
+
+                              {/* Medicamentos */}
+                              {tratamiento.tratamiento_medicamento && tratamiento.tratamiento_medicamento.length > 0 && (
+                                <div className="mt-2">
+                                  <span className="text-sm font-medium">Medicamentos:</span>
+                                  <div className="mt-1 space-y-2">
+                                    {tratamiento.tratamiento_medicamento.map((medTratamiento, mIndex) => (
+                                      <div key={mIndex} className="bg-purple-50 p-2 rounded">
+                                        <div className="flex justify-between items-start">
+                                          <div>
+                                            <span className="font-medium text-sm">
+                                              {medTratamiento.medicamento?.nombre_comercial}
+                                            </span>
+                                            {medTratamiento.medicamento?.concentracion && (
+                                              <span className="text-sm text-gray-600 ml-2">
+                                                ({medTratamiento.medicamento.concentracion})
+                                              </span>
+                                            )}
+                                          </div>
+                                          <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                                            {medTratamiento.medicamento?.laboratorio}
+                                          </span>
+                                        </div>
+                                        
+                                        <div className="mt-1 text-sm">
+                                          <span className="font-medium">Dosis:</span> {medTratamiento.cantidad_dosis}
+                                          <span className="ml-4 font-medium">Frecuencia:</span> {medTratamiento.frecuencia}
+                                        </div>
+                                        
+                                        {medTratamiento.medicamento?.metodo_administracion && (
+                                          <div className="text-xs text-gray-600 mt-1">
+                                            Administración: {medTratamiento.medicamento.metodo_administracion}
+                                          </div>
+                                        )}
+                                        
+                                        {medTratamiento.motivo && (
+                                          <div className="text-xs text-gray-600 mt-1">
+                                            Motivo: {medTratamiento.motivo}
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Exámenes */}
+                      {servicio.examen && servicio.examen.length > 0 && (
+                        <div>
+                          <h5 className="font-medium text-gray-800 mb-2 flex items-center">
+                            <TestTube className="h-4 w-4 mr-2 text-green-600" />
+                            Exámenes
+                          </h5>
+                          {servicio.examen.map((examen, index) => (
+                            <div key={index} className="bg-white p-3 rounded border">
+                              <div className="flex justify-between items-start mb-2">
+                                <div>
+                                  {examen.tipo_procedimiento && (
+                                    <span className="font-medium text-sm">{examen.tipo_procedimiento}</span>
+                                  )}
+                                  {examen.tipo_laboratorio && (
+                                    <span className="text-sm text-gray-600 ml-2">({examen.tipo_laboratorio})</span>
+                                  )}
+                                </div>
+                                <span className="text-xs text-gray-500">
+                                  {new Date(examen.fecha_hora_atencion).toLocaleString('es-ES')}
+                                </span>
+                              </div>
+                              
+                              {examen.descripcion_procedimiento && (
+                                <div className="mb-2">
+                                  <span className="text-sm font-medium">Procedimiento:</span>
+                                  <p className="text-sm">{examen.descripcion_procedimiento}</p>
+                                </div>
+                              )}
+                              
+                              {examen.descripcion && (
+                                <div className="mb-2">
+                                  <span className="text-sm font-medium">Descripción:</span>
+                                  <p className="text-sm">{examen.descripcion}</p>
+                                </div>
+                              )}
+                              
+                              {examen.resultado && (
+                                <div className="bg-green-50 p-2 rounded">
+                                  <span className="text-sm font-medium">Resultado:</span>
+                                  <p className="text-sm">{examen.resultado}</p>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Terapias */}
+                      {servicio.terapia && servicio.terapia.length > 0 && (
+                        <div>
+                          <h5 className="font-medium text-gray-800 mb-2 flex items-center">
+                            <Heart className="h-4 w-4 mr-2 text-pink-600" />
+                            Terapias
+                          </h5>
+                          {servicio.terapia.map((terapia, index) => (
+                            <div key={index} className="bg-white p-3 rounded border">
+                              {terapia.descripcion && (
+                                <div className="mb-2">
+                                  <span className="text-sm font-medium">Descripción:</span>
+                                  <p className="text-sm">{terapia.descripcion}</p>
+                                </div>
+                              )}
+                              
+                              {terapia.observaciones && (
+                                <div className="mb-2">
+                                  <span className="text-sm font-medium">Observaciones:</span>
+                                  <p className="text-sm">{terapia.observaciones}</p>
+                                </div>
+                              )}
+                              
+                              {terapia.resultados && (
+                                <div className="bg-pink-50 p-2 rounded">
+                                  <span className="text-sm font-medium">Resultados:</span>
+                                  <p className="text-sm">{terapia.resultados}</p>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Intervenciones Quirúrgicas */}
+                      {servicio.intervencion_quirurgica && servicio.intervencion_quirurgica.length > 0 && (
+                        <div>
+                          <h5 className="font-medium text-gray-800 mb-2 flex items-center">
+                            <Scissors className="h-4 w-4 mr-2 text-red-600" />
+                            Intervenciones Quirúrgicas
+                          </h5>
+                          {servicio.intervencion_quirurgica.map((intervencion, index) => (
+                            <div key={index} className="bg-white p-3 rounded border">
+                              {intervencion.procedimiento_quirurgico && (
+                                <div className="mb-2">
+                                  <span className="text-sm font-medium">Procedimiento:</span>
+                                  <p className="text-sm">{intervencion.procedimiento_quirurgico}</p>
+                                </div>
+                              )}
+                              
+                              {intervencion.tipo_anestesia && (
+                                <div className="mb-2">
+                                  <span className="text-sm font-medium">Tipo de Anestesia:</span>
+                                  <p className="text-sm">{intervencion.tipo_anestesia}</p>
+                                </div>
+                              )}
+                              
+                              {intervencion.observaciones && (
+                                <div className="mb-2">
+                                  <span className="text-sm font-medium">Observaciones:</span>
+                                  <p className="text-sm">{intervencion.observaciones}</p>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Controles de Signos Vitales */}
+                      {servicio.control && servicio.control.length > 0 && (
+                        <div>
+                          <h5 className="font-medium text-gray-800 mb-2 flex items-center">
+                            <Activity className="h-4 w-4 mr-2 text-blue-600" />
+                            Controles de Signos Vitales
+                          </h5>
+                          {servicio.control.map((control, index) => (
+                            <div key={index} className="bg-white p-3 rounded border">
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-2">
+                                <div className="text-center">
+                                  <span className="text-xs text-gray-500">Pulso</span>
+                                  <p className="font-medium">{control.pulso_cardiaco} bpm</p>
+                                </div>
+                                <div className="text-center">
+                                  <span className="text-xs text-gray-500">Presión</span>
+                                  <p className="font-medium">
+                                    {control.presion_sistolica}/{control.presion_diastolica} mmHg
+                                  </p>
+                                </div>
+                                <div className="text-center">
+                                  <span className="text-xs text-gray-500">Oxigenación</span>
+                                  <p className="font-medium">{control.oxigenacion}%</p>
+                                </div>
+                                <div className="text-center">
+                                  <span className="text-xs text-gray-500">Estado</span>
+                                  <p className="font-medium">{control.estado_paciente || 'Normal'}</p>
+                                </div>
+                              </div>
+                              
+                              {control.observaciones && (
+                                <div className="mt-2">
+                                  <span className="text-sm font-medium">Observaciones:</span>
+                                  <p className="text-sm">{control.observaciones}</p>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Ingresos Hospitalarios */}
+                      {servicio.ingreso_hospitalizacion && servicio.ingreso_hospitalizacion.length > 0 && (
+                        <div>
+                          <h5 className="font-medium text-gray-800 mb-2 flex items-center">
+                            <Bed className="h-4 w-4 mr-2 text-orange-600" />
+                            Ingresos Hospitalarios
+                          </h5>
+                          {servicio.ingreso_hospitalizacion.map((ingreso, index) => (
+                            <div key={index} className="bg-white p-3 rounded border">
+                              {ingreso.razon_ingreso && (
+                                <div className="mb-2">
+                                  <span className="text-sm font-medium">Razón de Ingreso:</span>
+                                  <p className="text-sm">{ingreso.razon_ingreso}</p>
+                                </div>
+                              )}
+                              
+                              {ingreso.atenciones_necesarias && (
+                                <div className="mb-2">
+                                  <span className="text-sm font-medium">Atenciones Necesarias:</span>
+                                  <p className="text-sm">{ingreso.atenciones_necesarias}</p>
+                                </div>
+                              )}
+                              
+                              <div className="flex gap-4 text-sm">
+                                {ingreso.fecha_estimada_alta && (
+                                  <div>
+                                    <span className="font-medium">Fecha Estimada de Alta:</span> {' '}
+                                    {new Date(ingreso.fecha_estimada_alta).toLocaleDateString('es-ES')}
+                                  </div>
+                                )}
+                                {ingreso.nro_camas && (
+                                  <div>
+                                    <span className="font-medium">Número de Cama:</span> {ingreso.nro_camas}
+                                  </div>
+                                )}
                               </div>
                             </div>
-                          )}
+                          ))}
                         </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+                      )}
 
-            {/* Exámenes */}
-            {service.examenes && service.examenes.length > 0 && (
-              <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">Exámenes:</p>
-                <div className="space-y-2">
-                  {service.examenes.map((examen) => (
-                    <div key={examen.id_examen} className="bg-white p-3 rounded border">
-                      <div className="flex items-start">
-                        <TestTube className="h-4 w-4 text-blue-600 mr-2 mt-1" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">
-                            {examen.descripcion_procedimiento || examen.tipo_procedimiento}
-                          </p>
-                          {examen.tipo_laboratorio && (
-                            <p className="text-xs text-gray-600">Laboratorio: {examen.tipo_laboratorio}</p>
-                          )}
-                          {examen.descripcion && (
-                            <p className="text-xs text-gray-600 mt-1">{examen.descripcion}</p>
-                          )}
-                          {examen.resultado && (
-                            <div className="mt-2 p-2 bg-green-50 rounded">
-                              <p className="text-xs font-medium text-green-800">Resultado:</p>
-                              <p className="text-xs text-green-700">{examen.resultado}</p>
+                      {/* Altas Hospitalarias */}
+                      {servicio.alta_hospitalizacion && servicio.alta_hospitalizacion.length > 0 && (
+                        <div>
+                          <h5 className="font-medium text-gray-800 mb-2 flex items-center">
+                            <Bed className="h-4 w-4 mr-2 text-green-600" />
+                            Altas Hospitalarias
+                          </h5>
+                          {servicio.alta_hospitalizacion.map((alta, index) => (
+                            <div key={index} className="bg-white p-3 rounded border">
+                              {alta.motivo_alta && (
+                                <div className="mb-2">
+                                  <span className="text-sm font-medium">Motivo de Alta:</span>
+                                  <p className="text-sm">{alta.motivo_alta}</p>
+                                </div>
+                              )}
+                              
+                              {alta.indicaciones_postalta && (
+                                <div className="bg-green-50 p-2 rounded">
+                                  <span className="text-sm font-medium">Indicaciones Post-Alta:</span>
+                                  <p className="text-sm">{alta.indicaciones_postalta}</p>
+                                </div>
+                              )}
                             </div>
-                          )}
-                          <p className="text-xs text-gray-500 mt-1">
-                            Fecha: {new Date(examen.fecha_hora_atencion).toLocaleString('es-ES')}
-                          </p>
+                          ))}
                         </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+                      )}
 
-            {/* Terapias */}
-            {service.terapias && service.terapias.length > 0 && (
-              <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">Terapias:</p>
-                <div className="space-y-2">
-                  {service.terapias.map((terapia) => (
-                    <div key={terapia.id_terapia} className="bg-white p-3 rounded border">
-                      <div className="flex items-start">
-                        <Activity className="h-4 w-4 text-green-600 mr-2 mt-1" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">{terapia.descripcion}</p>
-                          {terapia.observaciones && (
-                            <p className="text-xs text-gray-600 mt-1">{terapia.observaciones}</p>
-                          )}
-                          {terapia.resultados && (
-                            <div className="mt-2 p-2 bg-green-50 rounded">
-                              <p className="text-xs font-medium text-green-800">Resultados:</p>
-                              <p className="text-xs text-green-700">{terapia.resultados}</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
               </div>
-            )}
-
-            {/* Intervenciones Quirúrgicas */}
-            {service.intervenciones_quirurgicas && service.intervenciones_quirurgicas.length > 0 && (
-              <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">Intervenciones Quirúrgicas:</p>
-                <div className="space-y-2">
-                  {service.intervenciones_quirurgicas.map((intervencion) => (
-                    <div key={intervencion.id_intervencion} className="bg-white p-3 rounded border">
-                      <div className="flex items-start">
-                        <Scissors className="h-4 w-4 text-red-600 mr-2 mt-1" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">{intervencion.procedimiento_quirurgico}</p>
-                          {intervencion.tipo_anestesia && (
-                            <p className="text-xs text-gray-600">Anestesia: {intervencion.tipo_anestesia}</p>
-                          )}
-                          {intervencion.observaciones && (
-                            <p className="text-xs text-gray-600 mt-1">{intervencion.observaciones}</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Controles de Signos Vitales */}
-            {service.controles && service.controles.length > 0 && (
-              <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">Controles de Signos Vitales:</p>
-                <div className="space-y-2">
-                  {service.controles.map((control) => (
-                    <div key={control.id_control} className="bg-white p-3 rounded border">
-                      <div className="flex items-start">
-                        <Heart className="h-4 w-4 text-red-600 mr-2 mt-1" />
-                        <div className="flex-1">
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                            <div>
-                              <span className="font-medium">Pulso:</span> {control.pulso_cardiaco} bpm
-                            </div>
-                            <div>
-                              <span className="font-medium">Presión:</span> {control.presion_sistolica}/{control.presion_diastolica} mmHg
-                            </div>
-                            <div>
-                              <span className="font-medium">Oxigenación:</span> {control.oxigenacion}%
-                            </div>
-                            <div>
-                              <span className="font-medium">Estado:</span> {control.estado_paciente}
-                            </div>
-                          </div>
-                          {control.observaciones && (
-                            <p className="text-xs text-gray-600 mt-1">{control.observaciones}</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Ingresos de Hospitalización */}
-            {service.ingresos_hospitalizacion && service.ingresos_hospitalizacion.length > 0 && (
-              <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">Ingresos de Hospitalización:</p>
-                <div className="space-y-2">
-                  {service.ingresos_hospitalizacion.map((ingreso) => (
-                    <div key={ingreso.id_ingreso_hospitalizacion} className="bg-white p-3 rounded border">
-                      <div className="flex items-start">
-                        <Bed className="h-4 w-4 text-blue-600 mr-2 mt-1" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">Razón de ingreso: {ingreso.razon_ingreso}</p>
-                          {ingreso.atenciones_necesarias && (
-                            <p className="text-xs text-gray-600">Atenciones: {ingreso.atenciones_necesarias}</p>
-                          )}
-                          {ingreso.fecha_estimada_alta && (
-                            <p className="text-xs text-gray-600">
-                              Fecha estimada de alta: {new Date(ingreso.fecha_estimada_alta).toLocaleDateString('es-ES')}
-                            </p>
-                          )}
-                          {ingreso.nro_camas && (
-                            <p className="text-xs text-gray-600">Número de camas: {ingreso.nro_camas}</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Altas de Hospitalización */}
-            {service.altas_hospitalizacion && service.altas_hospitalizacion.length > 0 && (
-              <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">Altas de Hospitalización:</p>
-                <div className="space-y-2">
-                  {service.altas_hospitalizacion.map((alta) => (
-                    <div key={alta.id_alta_hospitalizacion} className="bg-white p-3 rounded border">
-                      <div className="flex items-start">
-                        <Bed className="h-4 w-4 text-green-600 mr-2 mt-1" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">Motivo de alta: {alta.motivo_alta}</p>
-                          {alta.indicaciones_postalta && (
-                            <div className="mt-2 p-2 bg-green-50 rounded">
-                              <p className="text-xs font-medium text-green-800">Indicaciones post-alta:</p>
-                              <p className="text-xs text-green-700">{alta.indicaciones_postalta}</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <Stethoscope className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+            <p>No se encontraron servicios médicos registrados</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
