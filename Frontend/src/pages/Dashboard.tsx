@@ -1,7 +1,63 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useUser } from '../contexts/UserContext';
-import { Calendar, FileText, AlertCircle, Users, Stethoscope, Clock } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import { 
+  Calendar, 
+  FileText, 
+  AlertCircle, 
+  Users, 
+  Stethoscope, 
+  Clock,
+  Activity,
+  TrendingUp,
+  UserCheck,
+  RefreshCw
+} from 'lucide-react';
+
+// Interfaces para los datos
+interface UpcomingAppointment {
+  id: number;
+  doctor: string;
+  specialty: string;
+  date: string;
+  time: string;
+  status: string;
+}
+
+interface RecentMedicalRecord {
+  id: number;
+  serviceType: string;
+  doctor: string;
+  date: string;
+  type: 'consulta' | 'examen' | 'terapia' | 'cirugia' | 'control';
+}
+
+interface AccessRequest {
+  id: number;
+  name: string;
+  type: string;
+  document: string;
+  requestDate: string;
+  status: string;
+}
+
+interface TodayAppointment {
+  id: number;
+  patient: string;
+  time: string;
+  status: 'completed' | 'in-progress' | 'pending';
+  specialty?: string;
+}
+
+interface DashboardStats {
+  totalUsers: number;
+  activeUsers: number;
+  pendingRequests: number;
+  totalAppointments: number;
+  completedAppointments: number;
+  totalPatients: number;
+}
 
 const Dashboard: React.FC = () => {
   const { user } = useUser();
@@ -46,10 +102,183 @@ const Dashboard: React.FC = () => {
 };
 
 const PatientDashboard: React.FC = () => {
-  const upcomingAppointments = [
-    { id: 1, doctor: 'Dr. María González', specialty: 'Cardiología', date: '15 Jun 2025', time: '09:30 AM' },
-    { id: 2, doctor: 'Dr. Carlos Ruiz', specialty: 'Oftalmología', date: '22 Jun 2025', time: '11:00 AM' },
-  ];
+  const { user } = useUser();
+  const [upcomingAppointments, setUpcomingAppointments] = useState<UpcomingAppointment[]>([]);
+  const [recentRecords, setRecentRecords] = useState<RecentMedicalRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchPatientData = async () => {
+    if (!user?.currentProfileId) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Obtener citas próximas del paciente
+      const { data: citasData, error: citasError } = await supabase
+        .from('cita_medica')
+        .select(`
+          id_cita_medica,
+          fecha_hora_programada,
+          estado,
+          personal_medico (
+            persona (
+              prenombres,
+              primer_apellido
+            ),
+            especialidad (
+              descripcion
+            )
+          )
+        `)
+        .eq('id_paciente', user.currentProfileId)
+        .eq('estado', 'Programada')
+        .gte('fecha_hora_programada', new Date().toISOString())
+        .order('fecha_hora_programada', { ascending: true })
+        .limit(5);
+
+      if (!citasError && citasData) {
+        const appointments: UpcomingAppointment[] = citasData.map((cita: any) => {
+          const fechaHora = new Date(cita.fecha_hora_programada);
+          const doctor = cita.personal_medico?.persona;
+          const doctorName = doctor ? 
+            `Dr. ${doctor.prenombres} ${doctor.primer_apellido}` : 
+            'Doctor no asignado';
+
+          return {
+            id: cita.id_cita_medica,
+            doctor: doctorName,
+            specialty: cita.personal_medico?.especialidad?.descripcion || 'Medicina General',
+            date: fechaHora.toLocaleDateString('es-ES'),
+            time: fechaHora.toLocaleTimeString('es-ES', { 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            }),
+            status: cita.estado
+          };
+        });
+        setUpcomingAppointments(appointments);
+      }
+
+      // Obtener servicios médicos recientes
+      const { data: serviciosData, error: serviciosError } = await supabase
+        .from('servicio_medico')
+        .select(`
+          id_servicio_medico,
+          fecha_servicio,
+          cita_medica!inner (
+            id_paciente,
+            personal_medico (
+              persona (
+                prenombres,
+                primer_apellido
+              )
+            )
+          ),
+          consulta_medica (
+            id_consulta_medica,
+            tipo_servicio (
+              nombre
+            )
+          ),
+          examen (
+            id_examen,
+            tipo_procedimiento,
+            tipo_laboratorio
+          ),
+          terapia (
+            id_terapia,
+            descripcion
+          ),
+          intervencion_quirurgica (
+            id_intervencion,
+            procedimiento_quirurgico
+          ),
+          control (
+            id_control
+          )
+        `)
+        .eq('cita_medica.id_paciente', user.currentProfileId)
+        .order('fecha_servicio', { ascending: false })
+        .limit(5);
+
+      if (!serviciosError && serviciosData) {
+        const records: RecentMedicalRecord[] = serviciosData.map((servicio: any) => {
+          const doctor = servicio.cita_medica?.personal_medico?.persona;
+          const doctorName = doctor ? 
+            `Dr. ${doctor.prenombres} ${doctor.primer_apellido}` : 
+            'Personal médico';
+
+          let serviceType = 'Servicio Médico';
+          let type: RecentMedicalRecord['type'] = 'consulta';
+
+          if (servicio.consulta_medica && servicio.consulta_medica.length > 0) {
+            serviceType = servicio.consulta_medica[0].tipo_servicio?.nombre || 'Consulta Médica';
+            type = 'consulta';
+          } else if (servicio.examen && servicio.examen.length > 0) {
+            const examen = servicio.examen[0];
+            serviceType = examen.tipo_laboratorio || examen.tipo_procedimiento || 'Examen Médico';
+            type = 'examen';
+          } else if (servicio.terapia && servicio.terapia.length > 0) {
+            serviceType = 'Terapia';
+            type = 'terapia';
+          } else if (servicio.intervencion_quirurgica && servicio.intervencion_quirurgica.length > 0) {
+            serviceType = 'Intervención Quirúrgica';
+            type = 'cirugia';
+          } else if (servicio.control && servicio.control.length > 0) {
+            serviceType = 'Control de Signos Vitales';
+            type = 'control';
+          }
+
+          return {
+            id: servicio.id_servicio_medico,
+            serviceType,
+            doctor: doctorName,
+            date: new Date(servicio.fecha_servicio).toLocaleDateString('es-ES'),
+            type
+          };
+        });
+        setRecentRecords(records);
+      }
+
+    } catch (error) {
+      console.error('Error cargando datos del paciente:', error);
+      setError('Error al cargar los datos');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPatientData();
+  }, [user?.currentProfileId]);
+
+  const getServiceIcon = (type: RecentMedicalRecord['type']) => {
+    switch (type) {
+      case 'consulta':
+        return <Stethoscope className="h-5 w-5 text-green-600" />;
+      case 'examen':
+        return <FileText className="h-5 w-5 text-blue-600" />;
+      case 'terapia':
+        return <Activity className="h-5 w-5 text-purple-600" />;
+      case 'cirugia':
+        return <AlertCircle className="h-5 w-5 text-red-600" />;
+      case 'control':
+        return <Activity className="h-5 w-5 text-pink-600" />;
+      default:
+        return <FileText className="h-5 w-5 text-gray-600" />;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span className="ml-2 text-gray-600">Cargando...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -57,12 +286,23 @@ const PatientDashboard: React.FC = () => {
       <div className="col-span-1 md:col-span-2 bg-white rounded-lg shadow-sm p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-medium text-gray-800">Próximas Citas</h2>
-          <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-            Ver todas
-          </button>
+          {error && (
+            <button 
+              onClick={fetchPatientData}
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center"
+            >
+              <RefreshCw className="h-4 w-4 mr-1" />
+              Reintentar
+            </button>
+          )}
         </div>
         
-        {upcomingAppointments.length > 0 ? (
+        {error ? (
+          <div className="text-center py-6 text-red-500">
+            <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+            <p className="text-sm">{error}</p>
+          </div>
+        ) : upcomingAppointments.length > 0 ? (
           <div className="space-y-4">
             {upcomingAppointments.map((appointment) => (
               <div key={appointment.id} className="border-l-4 border-blue-500 pl-4 py-3 bg-blue-50 rounded-r-md">
@@ -83,9 +323,6 @@ const PatientDashboard: React.FC = () => {
           <div className="text-center py-6 text-gray-500">
             <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-2" />
             <p>No tienes citas programadas</p>
-            <button className="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium">
-              Programar una cita
-            </button>
           </div>
         )}
       </div>
@@ -94,51 +331,48 @@ const PatientDashboard: React.FC = () => {
       <div className="col-span-1 bg-white rounded-lg shadow-sm p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-medium text-gray-800">Historial Reciente</h2>
-          <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+          <Link 
+            to="/medical-records"
+            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+          >
             Ver todo
-          </button>
+          </Link>
         </div>
         
         <div className="space-y-4">
-          <div className="border border-gray-200 rounded-md p-3 hover:bg-gray-50 transition-colors">
-            <div className="flex justify-between">
-              <div className="flex items-center">
-                <Stethoscope className="h-5 w-5 text-green-600 mr-2" />
-                <p className="font-medium text-gray-800">Consulta General</p>
+          {recentRecords.length > 0 ? (
+            recentRecords.map((record) => (
+              <div key={record.id} className="border border-gray-200 rounded-md p-3 hover:bg-gray-50 transition-colors">
+                <div className="flex justify-between">
+                  <div className="flex items-center">
+                    {getServiceIcon(record.type)}
+                    <p className="font-medium text-gray-800 ml-2 text-sm">{record.serviceType}</p>
+                  </div>
+                  <span className="text-xs text-gray-500">{record.date}</span>
+                </div>
+                <p className="text-sm text-gray-600 mt-1">{record.doctor}</p>
               </div>
-              <span className="text-xs text-gray-500">10 May 2025</span>
+            ))
+          ) : (
+            <div className="text-center py-4 text-gray-500">
+              <FileText className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+              <p className="text-sm">No hay registros recientes</p>
             </div>
-            <p className="text-sm text-gray-600 mt-1">Dr. Fernando Méndez</p>
-          </div>
-          
-          <div className="border border-gray-200 rounded-md p-3 hover:bg-gray-50 transition-colors">
-            <div className="flex justify-between">
-              <div className="flex items-center">
-                <FileText className="h-5 w-5 text-blue-600 mr-2" />
-                <p className="font-medium text-gray-800">Análisis de Sangre</p>
-              </div>
-              <span className="text-xs text-gray-500">28 Abr 2025</span>
-            </div>
-            <p className="text-sm text-gray-600 mt-1">Lab. Central</p>
-          </div>
+          )}
         </div>
       </div>
 
       {/* Quick Actions */}
-      <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
-        <button className="bg-white p-4 rounded-lg shadow-sm flex items-center hover:bg-blue-50 transition-colors">
-          <div className="p-3 bg-blue-100 rounded-full">
-            <Calendar className="h-6 w-6 text-blue-600" />
-          </div>
-          <span className="ml-3 font-medium text-gray-800">Programar Cita</span>
-        </button>
-        
-        <button className="bg-white p-4 rounded-lg shadow-sm flex items-center hover:bg-green-50 transition-colors">
+      <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+        <Link 
+          to="/medical-records"
+          className="bg-white p-4 rounded-lg shadow-sm flex items-center hover:bg-green-50 transition-colors"
+        >
           <div className="p-3 bg-green-100 rounded-full">
             <FileText className="h-6 w-6 text-green-600" />
           </div>
           <span className="ml-3 font-medium text-gray-800">Ver Historia Clínica</span>
-        </button>
+        </Link>
         
         <button className="bg-white p-4 rounded-lg shadow-sm flex items-center hover:bg-purple-50 transition-colors">
           <div className="p-3 bg-purple-100 rounded-full">
@@ -152,107 +386,258 @@ const PatientDashboard: React.FC = () => {
 };
 
 const AdminDashboard: React.FC = () => {
-  const pendingAccessRequests = [
-    { id: 1, name: 'Laura Martínez', type: 'Paciente', document: '40582934', requestDate: '12 Jun 2025' },
-    { id: 2, name: 'Dr. Alberto Gómez', type: 'Personal Médico', document: '30125478', requestDate: '11 Jun 2025' },
-    { id: 3, name: 'Sandra Vega', type: 'Paciente', document: '42587963', requestDate: '10 Jun 2025' },
-  ];
+  const [pendingRequests, setPendingRequests] = useState<AccessRequest[]>([]);
+  const [stats, setStats] = useState<DashboardStats>({
+    totalUsers: 0,
+    activeUsers: 0,
+    pendingRequests: 0,
+    totalAppointments: 0,
+    completedAppointments: 0,
+    totalPatients: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchAdminData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Obtener solicitudes pendientes
+      const { data: solicitudesData, error: solicitudesError } = await supabase
+        .from('solicitud')
+        .select(`
+          id_solicitud,
+          descripcion,
+          fecha_solicitud,
+          estado_solicitud,
+          persona (
+            prenombres,
+            primer_apellido,
+            dni_idcarnet
+          )
+        `)
+        .eq('estado_solicitud', 'Pendiente')
+        .order('fecha_solicitud', { ascending: false })
+        .limit(5);
+
+      if (!solicitudesError && solicitudesData) {
+        const requests: AccessRequest[] = solicitudesData.map((solicitud: any) => ({
+          id: solicitud.id_solicitud,
+          name: `${solicitud.persona.prenombres} ${solicitud.persona.primer_apellido}`,
+          type: solicitud.descripcion || 'Solicitud de acceso',
+          document: solicitud.persona.dni_idcarnet,
+          requestDate: new Date(solicitud.fecha_solicitud).toLocaleDateString('es-ES'),
+          status: solicitud.estado_solicitud
+        }));
+        setPendingRequests(requests);
+      }
+
+      // Obtener estadísticas
+      const today = new Date().toISOString().split('T')[0];
+
+      // Total de pacientes
+      const { count: totalPatients } = await supabase
+        .from('paciente')
+        .select('*', { count: 'exact', head: true });
+
+      // Total de citas de hoy
+      const { count: todayAppointments } = await supabase
+        .from('cita_medica')
+        .select('*', { count: 'exact', head: true })
+        .gte('fecha_hora_programada', `${today}T00:00:00`)
+        .lt('fecha_hora_programada', `${today}T23:59:59`);
+
+      // Citas completadas de hoy
+      const { count: completedToday } = await supabase
+        .from('cita_medica')
+        .select('*', { count: 'exact', head: true })
+        .eq('estado', 'Completada')
+        .gte('fecha_hora_programada', `${today}T00:00:00`)
+        .lt('fecha_hora_programada', `${today}T23:59:59`);
+
+      // Solicitudes pendientes
+      const { count: pendingCount } = await supabase
+        .from('solicitud')
+        .select('*', { count: 'exact', head: true })
+        .eq('estado_solicitud', 'Pendiente');
+
+      // Personal médico activo
+      const { count: activeStaff } = await supabase
+        .from('personal_medico')
+        .select('*', { count: 'exact', head: true })
+        .eq('habilitado', true);
+
+      setStats({
+        totalUsers: (totalPatients || 0) + (activeStaff || 0),
+        activeUsers: activeStaff || 0,
+        pendingRequests: pendingCount || 0,
+        totalAppointments: todayAppointments || 0,
+        completedAppointments: completedToday || 0,
+        totalPatients: totalPatients || 0
+      });
+
+    } catch (error) {
+      console.error('Error cargando datos de administrador:', error);
+      setError('Error al cargar los datos');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAdminData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span className="ml-2 text-gray-600">Cargando estadísticas...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      {/* Access Requests */}
-      <div className="col-span-1 md:col-span-2 bg-white rounded-lg shadow-sm p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-medium text-gray-800">Solicitudes de Acceso Pendientes</h2>
-          <span className="inline-flex items-center justify-center text-center px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
-            {pendingAccessRequests.length} nuevas
-          </span>
+      {/* Estadísticas principales */}
+      <div className="col-span-1 md:col-span-3 grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center">
+            <div className="p-3 bg-blue-100 rounded-full">
+              <Users className="h-6 w-6 text-blue-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Total Pacientes</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.totalPatients}</p>
+            </div>
+          </div>
         </div>
-        
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Solicitante
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tipo
-                </th>
-                <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Documento
-                </th>
-                <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Fecha
-                </th>
-                <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {pendingAccessRequests.map((request) => (
-                <tr key={request.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{request.name}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500">{request.type}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-left text-sm text-gray-500">{request.document}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-left text-sm text-gray-500">{request.requestDate}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button className="text-green-600 hover:text-green-800 mr-3">
-                      Aprobar
-                    </button>
-                    <button className="text-red-600 hover:text-red-800">
-                      Rechazar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center">
+            <div className="p-3 bg-green-100 rounded-full">
+              <UserCheck className="h-6 w-6 text-green-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Personal Activo</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.activeUsers}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center">
+            <div className="p-3 bg-yellow-100 rounded-full">
+              <Clock className="h-6 w-6 text-yellow-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Citas Hoy</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.totalAppointments}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center">
+            <div className="p-3 bg-red-100 rounded-full">
+              <AlertCircle className="h-6 w-6 text-red-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Solicitudes</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.pendingRequests}</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Estadísticas para Administradores */}
+      {/* Solicitudes pendientes */}
+      <div className="col-span-1 md:col-span-2 bg-white rounded-lg shadow-sm p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-medium text-gray-800">Solicitudes Pendientes</h2>
+          {stats.pendingRequests > 0 && (
+            <span className="inline-flex items-center justify-center px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
+              {stats.pendingRequests} nuevas
+            </span>
+          )}
+        </div>
+        
+        {error ? (
+          <div className="text-center py-6 text-red-500">
+            <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+            <p className="text-sm">{error}</p>
+            <button 
+              onClick={fetchAdminData}
+              className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+            >
+              Reintentar
+            </button>
+          </div>
+        ) : pendingRequests.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Solicitante
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Documento
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Fecha
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {pendingRequests.map((request) => (
+                  <tr key={request.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{request.name}</div>
+                      <div className="text-sm text-gray-500">{request.type}</div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {request.document}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {request.requestDate}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="text-center py-6 text-gray-500">
+            <Users className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+            <p>No hay solicitudes pendientes</p>
+          </div>
+        )}
+      </div>
+
+      {/* Acciones rápidas */}
       <div className="col-span-1 space-y-6">
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-lg font-medium text-gray-800 mb-4">Estadísticas</h2>
+          <h2 className="text-lg font-medium text-gray-800 mb-4">Progreso del Día</h2>
           
           <div className="space-y-4">
             <div>
               <div className="flex justify-between mb-1">
-                <span className="text-sm font-medium text-gray-700">Solicitudes de Acceso</span>
-                <span className="text-sm font-medium text-gray-700">75%</span>
+                <span className="text-sm font-medium text-gray-700">Citas Completadas</span>
+                <span className="text-sm font-medium text-gray-700">
+                  {stats.totalAppointments > 0 ? Math.round((stats.completedAppointments / stats.totalAppointments) * 100) : 0}%
+                </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-blue-600 h-2 rounded-full" style={{ width: '75%' }}></div>
+                <div 
+                  className="bg-green-500 h-2 rounded-full" 
+                  style={{ 
+                    width: `${stats.totalAppointments > 0 ? (stats.completedAppointments / stats.totalAppointments) * 100 : 0}%` 
+                  }}
+                ></div>
               </div>
-            </div>
-            
-            <div>
-              <div className="flex justify-between mb-1">
-                <span className="text-sm font-medium text-gray-700">Usuarios Activos</span>
-                <span className="text-sm font-medium text-gray-700">92%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-green-500 h-2 rounded-full" style={{ width: '92%' }}></div>
-              </div>
-            </div>
-            
-            <div>
-              <div className="flex justify-between mb-1">
-                <span className="text-sm font-medium text-gray-700">Historias Actualizadas</span>
-                <span className="text-sm font-medium text-gray-700">68%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-yellow-500 h-2 rounded-full" style={{ width: '68%' }}></div>
+              <div className="text-xs text-gray-500 mt-1">
+                {stats.completedAppointments} de {stats.totalAppointments} citas
               </div>
             </div>
           </div>
@@ -263,18 +648,18 @@ const AdminDashboard: React.FC = () => {
           
           <div className="space-y-3">
             <Link
-                to='/access-management'
-                className="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center"
+              to='/access-management'
+              className="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center"
             >
               <Users className="h-5 w-5 mr-2" />
               Gestionar Usuarios
             </Link>
 
             <Link
-                to='/medical-records'
-                className="w-full py-2 px-4 bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200 transition-colors flex items-center justify-center"
+              to='/medical-records'
+              className="w-full py-2 px-4 bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200 transition-colors flex items-center justify-center"
             >
-              <Users className="h-5 w-5 mr-2" />
+              <FileText className="h-5 w-5 mr-2" />
               Historias Clínicas
             </Link>
           </div>
@@ -285,12 +670,121 @@ const AdminDashboard: React.FC = () => {
 };
 
 const MedicalDashboard: React.FC = () => {
-  const todayAppointments = [
-    { id: 1, patient: 'Carlos Sánchez', time: '09:00 AM', status: 'completed' },
-    { id: 2, patient: 'Ana García', time: '10:30 AM', status: 'in-progress' },
-    { id: 3, patient: 'Miguel López', time: '11:45 AM', status: 'pending' },
-    { id: 4, patient: 'Lucía Fernández', time: '14:15 PM', status: 'pending' },
-  ];
+  const { user } = useUser();
+  const [todayAppointments, setTodayAppointments] = useState<TodayAppointment[]>([]);
+  const [stats, setStats] = useState({
+    totalToday: 0,
+    completed: 0,
+    inProgress: 0,
+    pending: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchMedicalData = async () => {
+    if (!user?.currentProfileId) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const today = new Date().toISOString().split('T')[0];
+
+      // Obtener ID del personal médico
+      const { data: personalData, error: personalError } = await supabase
+        .from('personal_medico')
+        .select('id_personal_medico')
+        .eq('id_persona', user.currentProfileId)
+        .single();
+
+      if (personalError || !personalData) {
+        throw new Error('No se encontró información del personal médico');
+      }
+
+      // Obtener citas de hoy para este médico
+      const { data: citasData, error: citasError } = await supabase
+        .from('cita_medica')
+        .select(`
+          id_cita_medica,
+          fecha_hora_programada,
+          estado,
+          paciente (
+            persona (
+              prenombres,
+              primer_apellido
+            )
+          ),
+          servicio_medico (
+            id_servicio_medico,
+            fecha_servicio
+          )
+        `)
+        .eq('id_personal_medico', personalData.id_personal_medico)
+        .gte('fecha_hora_programada', `${today}T00:00:00`)
+        .lt('fecha_hora_programada', `${today}T23:59:59`)
+        .order('fecha_hora_programada', { ascending: true });
+
+      if (!citasError && citasData) {
+        const appointments: TodayAppointment[] = citasData.map((cita: any) => {
+          const fechaHora = new Date(cita.fecha_hora_programada);
+          const paciente = cita.paciente?.persona;
+          const patientName = paciente ? 
+            `${paciente.prenombres} ${paciente.primer_apellido}` : 
+            'Paciente no identificado';
+
+          let status: TodayAppointment['status'] = 'pending';
+          if (cita.estado === 'Completada' || cita.servicio_medico?.length > 0) {
+            status = 'completed';
+          } else if (cita.estado === 'En Progreso') {
+            status = 'in-progress';
+          }
+
+          return {
+            id: cita.id_cita_medica,
+            patient: patientName,
+            time: fechaHora.toLocaleTimeString('es-ES', { 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            }),
+            status
+          };
+        });
+
+        setTodayAppointments(appointments);
+
+        // Calcular estadísticas
+        const completed = appointments.filter(a => a.status === 'completed').length;
+        const inProgress = appointments.filter(a => a.status === 'in-progress').length;
+        const pending = appointments.filter(a => a.status === 'pending').length;
+
+        setStats({
+          totalToday: appointments.length,
+          completed,
+          inProgress,
+          pending
+        });
+      }
+
+    } catch (error) {
+      console.error('Error cargando datos médicos:', error);
+      setError('Error al cargar los datos');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMedicalData();
+  }, [user?.currentProfileId]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span className="ml-2 text-gray-600">Cargando agenda...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -299,57 +793,63 @@ const MedicalDashboard: React.FC = () => {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-medium text-gray-800">Agenda de Hoy</h2>
           <div className="text-sm text-gray-600">
-            {new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            {new Date().toLocaleDateString('es-ES', { 
+              weekday: 'long', 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            })}
           </div>
         </div>
         
-        <div className="space-y-4">
-          {todayAppointments.map((appointment) => (
-            <div 
-              key={appointment.id} 
-              className={`flex items-center justify-between p-4 rounded-md ${
-                appointment.status === 'completed' 
-                  ? 'bg-green-50 border-l-4 border-green-500' 
-                  : appointment.status === 'in-progress'
-                  ? 'bg-blue-50 border-l-4 border-blue-500'
-                  : 'bg-gray-50 border-l-4 border-gray-300'
-              }`}
+        {error ? (
+          <div className="text-center py-6 text-red-500">
+            <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+            <p className="text-sm">{error}</p>
+            <button 
+              onClick={fetchMedicalData}
+              className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
             >
-              <div className="flex items-center">
-                <div className="mr-4">
-                  <div className="text-sm font-medium">{appointment.time}</div>
-                </div>
-                <div>
-                  <div className="font-medium">{appointment.patient}</div>
-                  <div className="text-sm text-gray-500">
-                    {appointment.status === 'completed' 
-                      ? 'Completada' 
-                      : appointment.status === 'in-progress'
-                      ? 'En progreso'
-                      : 'Pendiente'}
+              Reintentar
+            </button>
+          </div>
+        ) : todayAppointments.length > 0 ? (
+          <div className="space-y-4">
+            {todayAppointments.map((appointment) => (
+              <div 
+                key={appointment.id} 
+                className={`flex items-center justify-between p-4 rounded-md ${
+                  appointment.status === 'completed' 
+                    ? 'bg-green-50 border-l-4 border-green-500' 
+                    : appointment.status === 'in-progress'
+                    ? 'bg-blue-50 border-l-4 border-blue-500'
+                    : 'bg-gray-50 border-l-4 border-gray-300'
+                }`}
+              >
+                <div className="flex items-center">
+                  <div className="mr-4">
+                    <div className="text-sm font-medium">{appointment.time}</div>
+                  </div>
+                  <div>
+                    <div className="font-medium">{appointment.patient}</div>
+                    <div className="text-sm text-gray-500">
+                      {appointment.status === 'completed' 
+                        ? 'Completada' 
+                        : appointment.status === 'in-progress'
+                        ? 'En progreso'
+                        : 'Pendiente'}
+                    </div>
                   </div>
                 </div>
               </div>
-              <div>
-                <button 
-                  className={`px-3 py-1 rounded-md text-sm font-medium ${
-                    appointment.status === 'completed' 
-                      ? 'bg-green-100 text-green-800' 
-                      : appointment.status === 'in-progress'
-                      ? 'bg-blue-100 text-blue-800'
-                      : 'bg-white text-blue-600 border border-blue-600'
-                  }`}
-                >
-                  {appointment.status === 'completed' 
-                    ? 'Ver detalles' 
-                    : appointment.status === 'in-progress'
-                    ? 'Continuar'
-                    : 'Iniciar atención'}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-6 text-gray-500">
+            <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+            <p>No tienes citas programadas para hoy</p>
+          </div>
+        )}
       </div>
 
       {/* Quick Actions and Stats */}
@@ -359,17 +859,20 @@ const MedicalDashboard: React.FC = () => {
           
           <div className="space-y-3">
             <Link
-                to = '/medical-services'
-                className="w-full py-3 px-4 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center justify-center"
-                >
+              to='/medical-services'
+              className="w-full py-3 px-4 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center justify-center"
+            >
               <Stethoscope className="h-5 w-5 mr-2" />
               Registrar Servicio Médico
             </Link>
 
-            <button className="w-full py-3 px-4 bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200 transition-colors flex items-center justify-center">
-              <Clock className="h-5 w-5 mr-2" />
-              Ver Historial de Paciente
-            </button>
+            <Link
+              to='/medical-records'
+              className="w-full py-3 px-4 bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200 transition-colors flex items-center justify-center"
+            >
+              <FileText className="h-5 w-5 mr-2" />
+              Ver Historias Clínicas
+            </Link>
           </div>
         </div>
         
@@ -378,22 +881,22 @@ const MedicalDashboard: React.FC = () => {
           
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-blue-50 p-4 rounded-md">
-              <div className="text-2xl font-bold text-blue-700">4</div>
+              <div className="text-2xl font-bold text-blue-700">{stats.totalToday}</div>
               <div className="text-sm text-blue-700">Citas programadas</div>
             </div>
             
             <div className="bg-green-50 p-4 rounded-md">
-              <div className="text-2xl font-bold text-green-700">1</div>
+              <div className="text-2xl font-bold text-green-700">{stats.completed}</div>
               <div className="text-sm text-green-700">Completadas</div>
             </div>
             
             <div className="bg-yellow-50 p-4 rounded-md">
-              <div className="text-2xl font-bold text-yellow-700">1</div>
+              <div className="text-2xl font-bold text-yellow-700">{stats.inProgress}</div>
               <div className="text-sm text-yellow-700">En progreso</div>
             </div>
             
             <div className="bg-gray-50 p-4 rounded-md">
-              <div className="text-2xl font-bold text-gray-700">2</div>
+              <div className="text-2xl font-bold text-gray-700">{stats.pending}</div>
               <div className="text-sm text-gray-700">Pendientes</div>
             </div>
           </div>
