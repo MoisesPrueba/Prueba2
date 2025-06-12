@@ -54,8 +54,6 @@ interface DashboardStats {
   totalUsers: number;
   activeUsers: number;
   pendingRequests: number;
-  totalAppointments: number;
-  completedAppointments: number;
   totalPatients: number;
 }
 
@@ -391,8 +389,6 @@ const AdminDashboard: React.FC = () => {
     totalUsers: 0,
     activeUsers: 0,
     pendingRequests: 0,
-    totalAppointments: 0,
-    completedAppointments: 0,
     totalPatients: 0
   });
   const [loading, setLoading] = useState(true);
@@ -434,27 +430,10 @@ const AdminDashboard: React.FC = () => {
       }
 
       // Obtener estadísticas
-      const today = new Date().toISOString().split('T')[0];
-
       // Total de pacientes
       const { count: totalPatients } = await supabase
         .from('paciente')
         .select('*', { count: 'exact', head: true });
-
-      // Total de citas de hoy
-      const { count: todayAppointments } = await supabase
-        .from('cita_medica')
-        .select('*', { count: 'exact', head: true })
-        .gte('fecha_hora_programada', `${today}T00:00:00`)
-        .lt('fecha_hora_programada', `${today}T23:59:59`);
-
-      // Citas completadas de hoy
-      const { count: completedToday } = await supabase
-        .from('cita_medica')
-        .select('*', { count: 'exact', head: true })
-        .eq('estado', 'Completada')
-        .gte('fecha_hora_programada', `${today}T00:00:00`)
-        .lt('fecha_hora_programada', `${today}T23:59:59`);
 
       // Solicitudes pendientes
       const { count: pendingCount } = await supabase
@@ -472,8 +451,6 @@ const AdminDashboard: React.FC = () => {
         totalUsers: (totalPatients || 0) + (activeStaff || 0),
         activeUsers: activeStaff || 0,
         pendingRequests: pendingCount || 0,
-        totalAppointments: todayAppointments || 0,
-        completedAppointments: completedToday || 0,
         totalPatients: totalPatients || 0
       });
 
@@ -501,7 +478,7 @@ const AdminDashboard: React.FC = () => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {/* Estadísticas principales */}
-      <div className="col-span-1 md:col-span-3 grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="col-span-1 md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="flex items-center">
             <div className="p-3 bg-blue-100 rounded-full">
@@ -528,23 +505,11 @@ const AdminDashboard: React.FC = () => {
 
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="flex items-center">
-            <div className="p-3 bg-yellow-100 rounded-full">
-              <Clock className="h-6 w-6 text-yellow-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Citas Hoy</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalAppointments}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <div className="flex items-center">
             <div className="p-3 bg-red-100 rounded-full">
               <AlertCircle className="h-6 w-6 text-red-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Solicitudes</p>
+              <p className="text-sm font-medium text-gray-600">Solicitudes Pendientes</p>
               <p className="text-2xl font-bold text-gray-900">{stats.pendingRequests}</p>
             </div>
           </div>
@@ -618,26 +583,26 @@ const AdminDashboard: React.FC = () => {
       {/* Acciones rápidas */}
       <div className="col-span-1 space-y-6">
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-lg font-medium text-gray-800 mb-4">Progreso del Día</h2>
+          <h2 className="text-lg font-medium text-gray-800 mb-4">Estadísticas del Sistema</h2>
           
           <div className="space-y-4">
             <div>
               <div className="flex justify-between mb-1">
-                <span className="text-sm font-medium text-gray-700">Citas Completadas</span>
+                <span className="text-sm font-medium text-gray-700">Usuarios Activos</span>
                 <span className="text-sm font-medium text-gray-700">
-                  {stats.totalAppointments > 0 ? Math.round((stats.completedAppointments / stats.totalAppointments) * 100) : 0}%
+                  {stats.totalUsers > 0 ? Math.round((stats.activeUsers / stats.totalUsers) * 100) : 0}%
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div 
                   className="bg-green-500 h-2 rounded-full" 
                   style={{ 
-                    width: `${stats.totalAppointments > 0 ? (stats.completedAppointments / stats.totalAppointments) * 100 : 0}%` 
+                    width: `${stats.totalUsers > 0 ? (stats.activeUsers / stats.totalUsers) * 100 : 0}%` 
                   }}
                 ></div>
               </div>
               <div className="text-xs text-gray-500 mt-1">
-                {stats.completedAppointments} de {stats.totalAppointments} citas
+                {stats.activeUsers} de {stats.totalUsers} usuarios
               </div>
             </div>
           </div>
@@ -690,16 +655,23 @@ const MedicalDashboard: React.FC = () => {
 
       const today = new Date().toISOString().split('T')[0];
 
-      // Obtener ID del personal médico
+      // Obtener ID del personal médico basado en id_persona
       const { data: personalData, error: personalError } = await supabase
         .from('personal_medico')
         .select('id_personal_medico')
         .eq('id_persona', user.currentProfileId)
         .single();
 
-      if (personalError || !personalData) {
+      if (personalError) {
+        console.error('Error obteniendo personal médico:', personalError);
         throw new Error('No se encontró información del personal médico');
       }
+
+      if (!personalData) {
+        throw new Error('No se encontró registro de personal médico para este usuario');
+      }
+
+      console.log('Personal médico encontrado:', personalData);
 
       // Obtener citas de hoy para este médico
       const { data: citasData, error: citasError } = await supabase
@@ -724,7 +696,14 @@ const MedicalDashboard: React.FC = () => {
         .lt('fecha_hora_programada', `${today}T23:59:59`)
         .order('fecha_hora_programada', { ascending: true });
 
-      if (!citasError && citasData) {
+      if (citasError) {
+        console.error('Error obteniendo citas:', citasError);
+        throw new Error('Error al cargar las citas médicas');
+      }
+
+      console.log('Citas encontradas:', citasData);
+
+      if (citasData && citasData.length > 0) {
         const appointments: TodayAppointment[] = citasData.map((cita: any) => {
           const fechaHora = new Date(cita.fecha_hora_programada);
           const paciente = cita.paciente?.persona;
@@ -733,7 +712,7 @@ const MedicalDashboard: React.FC = () => {
             'Paciente no identificado';
 
           let status: TodayAppointment['status'] = 'pending';
-          if (cita.estado === 'Completada' || cita.servicio_medico?.length > 0) {
+          if (cita.estado === 'Completada' || (cita.servicio_medico && cita.servicio_medico.length > 0)) {
             status = 'completed';
           } else if (cita.estado === 'En Progreso') {
             status = 'in-progress';
@@ -763,11 +742,20 @@ const MedicalDashboard: React.FC = () => {
           inProgress,
           pending
         });
+      } else {
+        // No hay citas para hoy
+        setTodayAppointments([]);
+        setStats({
+          totalToday: 0,
+          completed: 0,
+          inProgress: 0,
+          pending: 0
+        });
       }
 
     } catch (error) {
       console.error('Error cargando datos médicos:', error);
-      setError('Error al cargar los datos');
+      setError(error instanceof Error ? error.message : 'Error al cargar los datos');
     } finally {
       setLoading(false);
     }
@@ -808,8 +796,9 @@ const MedicalDashboard: React.FC = () => {
             <p className="text-sm">{error}</p>
             <button 
               onClick={fetchMedicalData}
-              className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+              className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center mx-auto"
             >
+              <RefreshCw className="h-4 w-4 mr-1" />
               Reintentar
             </button>
           </div>
